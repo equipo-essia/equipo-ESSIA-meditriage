@@ -124,7 +124,7 @@ Advisories públicos que afectaban a `starlette 0.36.3` y su estado con la versi
 | CVE-2024-47874 | DoS por `multipart/form-data` | starlette 0.40.0 | ✅ Corregido (1.10.0 ≥ 0.40.0) |
 | CVE-2025-54121 | DoS al procesar archivos grandes en formularios multipart | starlette 0.47.2 | ✅ Corregido (1.10.0 ≥ 0.47.2) |
 | CVE-2026-48818 (PYSEC-2026-2281) | **SSRF** y robo de credenciales NTLM por rutas UNC en `StaticFiles` | starlette 1.1.0 | ✅ Corregido (1.10.0 ≥ 1.1.0) |
-| CVE-2026-54283 | DoS por límites ignorados en `application/x-www-form-urlencoded` | No confirmada | Sin verificar. El SCA en verde indica que no hay un hallazgo HIGH o CRITICAL con corrección. Si es de otra severidad o no tiene parche, se registra como excepción VEX (ver README) |
+| CVE-2026-54283 | DoS por límites (max_fields, max_part_size) ignorados en application/x-www-form-urlencoded (CVSS 7.5, alta) | starlette 1.3.1 | ✅ Corregido (1.10.0 ≥ 1.3.1) |
 
 **Lectura:** la subida de versión cierra los advisories conocidos. Aun así, ninguno era alcanzable en MediTriage: la API solo recibe JSON, no declara `Form` ni `File`, no usa `StaticFiles` y no llama a `request.form()`.
 
