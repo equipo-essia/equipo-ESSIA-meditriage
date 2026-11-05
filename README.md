@@ -174,7 +174,11 @@ trivy fs --severity HIGH,CRITICAL --ignore-unfixed .
 gitleaks detect --source . --redact
 ```
 
-### Cómo re-triar un hallazgo
+### Re-triaje de vulnerabilidades y excepciones (VEX)
+
+El job `sca` falla el PR ante vulnerabilidades HIGH o CRITICAL con corrección disponible. Cada semana, y ante cada alerta, Cristóbal re-triagea los hallazgos abiertos. Un hallazgo sin excepción vigente y fuera de plazo bloquea la entrega.
+
+**Cómo re-triar un hallazgo**
 
 1. **Lee el log del job** que falló y copia el ID exacto (CVE, regla de Semgrep o regla de gitleaks). No lo escribas de memoria.
 2. **Clasifica** el hallazgo: verdadero positivo, falso positivo o vulnerabilidad real pero no explotable en MediTriage.
@@ -203,7 +207,7 @@ Una excepción se pide en el PR, con esta plantilla:
 
 ```
 CVE / componente:       CVE-XXXX-XXXXX en <paquete> <versión>
-Estado VEX:             not_affected | affected | fixed | under_investigation
+Estado VEX:             not_affected | affected | fixed | in_triage
 Justificación:          por qué no es explotable en MediTriage (o qué se hará para corregirlo)
 Evidencia:              enlace al código, test, configuración o log que lo respalda
 Responsable:            nombre
@@ -214,6 +218,8 @@ Reglas de las excepciones:
 - La aprueba **un revisor distinto al autor** del PR.
 - **Vencen** en la fecha de revisión (máximo 90 días); pasada la fecha, el hallazgo vuelve a bloquear hasta que se corrija o se renueve con nueva evidencia.
 - **Los secretos no admiten excepción.** Si gitleaks detecta uno, se revoca y se rota la credencial de inmediato; borrarla del código no basta, porque queda en el historial.
+
+Ejemplo documentado de una excepción: [`docs/threat-model.md`](docs/threat-model.md), sección 5.
 
 ### Modelo de amenazas
 
