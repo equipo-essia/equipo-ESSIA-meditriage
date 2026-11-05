@@ -1,0 +1,4 @@
+.semgrep/
+.venv/
+.terraform/
+node_modules/
