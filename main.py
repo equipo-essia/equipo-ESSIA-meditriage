@@ -11,7 +11,7 @@ Limitaciones conocidas (documentar en el README / ADR):
     propio estado y se pierde al reiniciar. En producción irían PostgreSQL + SQS.
   - La autenticación Bearer solo verifica que el header exista (stub); no valida
     la firma del JWT.
-  
+
 
 Compatibilidad con el despliegue:
   - Objeto ASGI `app` en main.py  ->  `uvicorn main:app`
@@ -19,11 +19,11 @@ Compatibilidad con el despliegue:
   - No escribe en disco (el Deployment usa readOnlyRootFilesystem)
   - Configuración por variables de entorno (ConfigMap: APP_ENV, LOG_LEVEL)
 """
+
 import json
 import logging
 import os
 import threading
-
 from datetime import date, datetime, timezone
 from typing import Any, Optional
 from uuid import UUID, uuid4
@@ -86,8 +86,15 @@ def mask_rut(rut: str) -> str:
 
 _CRITICAL_SYMPTOMS = ("paro cardio", "paro respiratorio", "inconsciente", "sin pulso")
 _HIGH_RISK_SYMPTOMS = (
-    "dolor torácico", "dolor toracico", "dificultad para respirar", "disnea",
-    "sangrado", "convulsi", "confusión", "confusion", "déficit neurológico",
+    "dolor torácico",
+    "dolor toracico",
+    "dificultad para respirar",
+    "disnea",
+    "sangrado",
+    "convulsi",
+    "confusión",
+    "confusion",
+    "déficit neurológico",
 )
 
 
@@ -145,10 +152,13 @@ def classify_esi(symptoms: list, vitals: dict) -> tuple:
         category, reasons = 5, ["sin síntomas reportados ni signos vitales de alarma"]
 
     justification = (
-        f"Categoría ESI {category} sugerida (motor rules-v0): " + "; ".join(reasons)
+        f"Categoría ESI {category} sugerida (motor rules-v0): "
+        + "; ".join(reasons)
         + ". Sugerencia de apoyo: requiere confirmación de la enfermera de triage."
     )
     return category, justification
+
+
 # --- FIN LÓGICA PURA -------------------------------------------------------
 
 
@@ -186,14 +196,21 @@ class TriageUpdateIn(BaseModel):
 # Errores RFC 7807 con trace_id
 # --------------------------------------------------------------------------
 class Problem(Exception):
-    def __init__(self, status: int, title: str, detail: str, slug: str,
-                 headers: Optional[dict] = None):
+    def __init__(
+        self, status: int, title: str, detail: str, slug: str, headers: Optional[dict] = None
+    ):
         self.status, self.title, self.detail, self.slug = status, title, detail, slug
         self.headers = headers
 
 
-def problem_response(request: Request, status: int, title: str, detail: str,
-                     slug: str, headers: Optional[dict] = None) -> JSONResponse:
+def problem_response(
+    request: Request,
+    status: int,
+    title: str,
+    detail: str,
+    slug: str,
+    headers: Optional[dict] = None,
+) -> JSONResponse:
     body = {
         "type": f"https://meditriage.example.com/errors/{slug}",
         "title": title,
@@ -202,8 +219,9 @@ def problem_response(request: Request, status: int, title: str, detail: str,
         "instance": request.url.path,
         "trace_id": str(uuid4()),
     }
-    return JSONResponse(status_code=status, content=body,
-                        media_type="application/problem+json", headers=headers)
+    return JSONResponse(
+        status_code=status, content=body, media_type="application/problem+json", headers=headers
+    )
 
 
 app = FastAPI(
@@ -220,17 +238,22 @@ async def _problem_handler(request: Request, exc: Problem):
 
 @app.exception_handler(RequestValidationError)
 async def _validation_handler(request: Request, exc: RequestValidationError):
-    detail = "; ".join(
-        f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors()
+    detail = "; ".join(f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors())
+    return problem_response(
+        request, 400, "Datos de solicitud inválidos", detail, "validation-error"
     )
-    return problem_response(request, 400, "Datos de solicitud inválidos", detail, "validation-error")
 
 
 @app.exception_handler(StarletteHTTPException)
 async def _http_handler(request: Request, exc: StarletteHTTPException):
     titles = {404: "Recurso no encontrado", 405: "Método no permitido"}
-    return problem_response(request, exc.status_code,
-                            titles.get(exc.status_code, "Error HTTP"), str(exc.detail), "http-error")
+    return problem_response(
+        request,
+        exc.status_code,
+        titles.get(exc.status_code, "Error HTTP"),
+        str(exc.detail),
+        "http-error",
+    )
 
 
 # --------------------------------------------------------------------------
@@ -241,9 +264,13 @@ def require_auth(authorization: Optional[str] = Header(default=None)) -> None:
         return
     parts = (authorization or "").split(" ", 1)
     if len(parts) != 2 or parts[0].lower() != "bearer" or not parts[1].strip():
-        raise Problem(401, "No autenticado",
-                      "Falta o es inválido el token Bearer.", "unauthorized",
-                      headers={"WWW-Authenticate": "Bearer"})
+        raise Problem(
+            401,
+            "No autenticado",
+            "Falta o es inválido el token Bearer.",
+            "unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 STORE: dict[str, Any] = {"patients": {}, "evaluations": {}, "audit": [], "idempotency": {}}
@@ -267,8 +294,12 @@ def _idem_replay(scope: str, key: UUID, fp: str) -> Optional[JSONResponse]:
     if rec is None:
         return None
     if rec["fp"] != fp:
-        raise Problem(409, "Conflicto de idempotencia",
-                      "El Idempotency-Key ya se usó con datos distintos.", "idempotency-conflict")
+        raise Problem(
+            409,
+            "Conflicto de idempotencia",
+            "El Idempotency-Key ya se usó con datos distintos.",
+            "idempotency-conflict",
+        )
     return JSONResponse(status_code=rec["status"], content=rec["body"])
 
 
@@ -278,12 +309,14 @@ def _idem_save(scope: str, key: UUID, fp: str, status: int, body: Any) -> None:
 
 def _audit(evaluation_id: str, esi: int, justification: str) -> None:
     """Registro append-only: nunca se modifica ni se borra una entrada."""
-    STORE["audit"].append({
-        "evaluationId": evaluation_id,
-        "esiCategory": esi,
-        "justification": justification,
-        "timestamp": _now_iso(),
-    })
+    STORE["audit"].append(
+        {
+            "evaluationId": evaluation_id,
+            "esiCategory": esi,
+            "justification": justification,
+            "timestamp": _now_iso(),
+        }
+    )
 
 
 # --------------------------------------------------------------------------
@@ -299,6 +332,7 @@ async def health():
 async def root():
     return {"service": "meditriage-api", "version": app.version, "env": APP_ENV}
 
+
 # --------------------------------------------------------------------------
 # Endpoints del contrato (api/openapi.yaml)
 # --------------------------------------------------------------------------
@@ -310,21 +344,30 @@ def register_patient(payload: PatientIn, idempotency_key: UUID = Header(...)):
         if replay:
             return replay
         if not payload.consentGiven:
-            raise Problem(422, "Consentimiento requerido",
-                          "consentGiven debe ser true para procesar datos clínicos.",
-                          "consent-required")
+            raise Problem(
+                422,
+                "Consentimiento requerido",
+                "consentGiven debe ser true para procesar datos clínicos.",
+                "consent-required",
+            )
         if not is_valid_rut(payload.rut):
-            raise Problem(422, "RUT inválido",
-                          "El RUT no cumple el formato o su dígito verificador es incorrecto.",
-                          "invalid-rut")
+            raise Problem(
+                422,
+                "RUT inválido",
+                "El RUT no cumple el formato o su dígito verificador es incorrecto.",
+                "invalid-rut",
+            )
         patient = {
             "id": _new_id("pt"),
             "rut": payload.rut,
             "fullName": payload.fullName,
             "consentGiven": True,
-            "consentTimestamp": (payload.consentTimestamp.isoformat()
-                                 if payload.consentTimestamp else _now_iso()),
-            "vitalSigns": payload.vitalSigns.model_dump(mode="json") if payload.vitalSigns else None,
+            "consentTimestamp": (
+                payload.consentTimestamp.isoformat() if payload.consentTimestamp else _now_iso()
+            ),
+            "vitalSigns": payload.vitalSigns.model_dump(mode="json")
+            if payload.vitalSigns
+            else None,
         }
         STORE["patients"][patient["id"]] = patient
         _idem_save(scope, idempotency_key, fp, 201, patient)
@@ -332,8 +375,9 @@ def register_patient(payload: PatientIn, idempotency_key: UUID = Header(...)):
     return JSONResponse(status_code=201, content=patient)
 
 
-@app.post("/triage-evaluations", status_code=202, dependencies=[Depends(require_auth)],
-          tags=["triage"])
+@app.post(
+    "/triage-evaluations", status_code=202, dependencies=[Depends(require_auth)], tags=["triage"]
+)
 def create_triage_evaluation(payload: TriageIn, idempotency_key: UUID = Header(...)):
     scope, fp = "POST /triage-evaluations", _fingerprint(payload)
     with LOCK:
@@ -341,9 +385,12 @@ def create_triage_evaluation(payload: TriageIn, idempotency_key: UUID = Header(.
         if replay:
             return replay
         if payload.patientId not in STORE["patients"]:
-            raise Problem(400, "Paciente no registrado",
-                          f"No existe el paciente '{payload.patientId}'. Regístrelo primero en POST /patients.",
-                          "unknown-patient")
+            raise Problem(
+                400,
+                "Paciente no registrado",
+                f"No existe el paciente '{payload.patientId}'. Regístrelo primero en POST /patients.",
+                "unknown-patient",
+            )
         esi, justification = classify_esi(payload.symptoms, payload.vitalSigns.model_dump())
         evaluation = {
             "id": _new_id("tr"),
@@ -361,8 +408,11 @@ def create_triage_evaluation(payload: TriageIn, idempotency_key: UUID = Header(.
 
 
 @app.patch("/triage-evaluations/{id}", dependencies=[Depends(require_auth)], tags=["triage"])
-def update_triage_evaluation(id: str, payload: TriageUpdateIn,  # noqa: A002
-                             idempotency_key: UUID = Header(...)):
+def update_triage_evaluation(
+    id: str,
+    payload: TriageUpdateIn,  # noqa: A002
+    idempotency_key: UUID = Header(...),
+):
     scope, fp = f"PATCH /triage-evaluations/{id}", _fingerprint(payload)
     with LOCK:
         replay = _idem_replay(scope, idempotency_key, fp)
@@ -370,8 +420,12 @@ def update_triage_evaluation(id: str, payload: TriageUpdateIn,  # noqa: A002
             return replay
         evaluation = STORE["evaluations"].get(id)
         if evaluation is None:
-            raise Problem(404, "Evaluación no encontrada",
-                          f"No existe la evaluación '{id}'.", "evaluation-not-found")
+            raise Problem(
+                404,
+                "Evaluación no encontrada",
+                f"No existe la evaluación '{id}'.",
+                "evaluation-not-found",
+            )
         if payload.manualEsiCategory is not None:
             evaluation["esiCategory"] = payload.manualEsiCategory
             evaluation["status"] = "manual_fallback"
@@ -382,9 +436,12 @@ def update_triage_evaluation(id: str, payload: TriageUpdateIn,  # noqa: A002
             evaluation["confirmedByNurse"] = True
             note = "Sugerencia de la IA confirmada por la enfermera de triage."
         else:
-            raise Problem(400, "Solicitud sin cambios",
-                          "Indique confirmedByNurse=true o manualEsiCategory (1-5).",
-                          "validation-error")
+            raise Problem(
+                400,
+                "Solicitud sin cambios",
+                "Indique confirmedByNurse=true o manualEsiCategory (1-5).",
+                "validation-error",
+            )
         _audit(id, evaluation["esiCategory"], note)
         _idem_save(scope, idempotency_key, fp, 200, evaluation)
     return JSONResponse(status_code=200, content=evaluation)
@@ -399,19 +456,28 @@ def triage_board():
 
 
 @app.get("/audit-logs", dependencies=[Depends(require_auth)], tags=["audit"])
-def audit_logs(date_from: Optional[date] = Query(None, alias="from"),
-               date_to: Optional[date] = Query(None, alias="to")):
+def audit_logs(
+    date_from: Optional[date] = Query(None, alias="from"),
+    date_to: Optional[date] = Query(None, alias="to"),
+):
     if date_from and date_to and date_from > date_to:
-        raise Problem(400, "Rango de fechas inválido",
-                      "'from' no puede ser posterior a 'to'.", "validation-error")
+        raise Problem(
+            400,
+            "Rango de fechas inválido",
+            "'from' no puede ser posterior a 'to'.",
+            "validation-error",
+        )
     with LOCK:
         entries = list(STORE["audit"])
+
     def in_range(e: dict) -> bool:
         d = datetime.fromisoformat(e["timestamp"]).date()
         return (not date_from or d >= date_from) and (not date_to or d <= date_to)
+
     return [e for e in entries if in_range(e)]
 
 
 if __name__ == "__main__":  # ejecución local: python main.py
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=PORT)

@@ -1,5 +1,5 @@
 # language: es
-Característica: US03 - Sugerencia de categoría ESI y explicabilidad por motor IA
+Característica: H3 - Sugerencia de categoría ESI y explicabilidad por motor IA
   Como Personal Clínico de Triage
   Quiero que la IA clasifique al paciente en la escala ESI (1-5) con su debida justificación
   Para agilizar la toma de decisiones clínicas con una latencia menor a 3 segundos

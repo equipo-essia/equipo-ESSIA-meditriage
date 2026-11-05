@@ -1,0 +1,9 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "I", "B"]
+ignore = [
+    "E501",  # el formateador ya ajusta el largo de línea
+    "B008",  # FastAPI usa Depends()/Query()/Header() como valor por defecto
+]
