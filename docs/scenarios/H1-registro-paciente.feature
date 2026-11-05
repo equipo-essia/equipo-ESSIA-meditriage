@@ -1,5 +1,5 @@
 # language: es
-Característica: US01 - Registro de paciente con validación de RUT y consentimiento informado
+Característica: H1 - Registro de paciente con validación de RUT y consentimiento informado
   Como Paciente o Personal de Admisión
   Quiero registrar la identificación y consentimiento del paciente
   Para habilitar la atención de urgencia bajo la normativa legal chilena

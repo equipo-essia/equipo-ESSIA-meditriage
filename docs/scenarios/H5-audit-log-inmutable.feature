@@ -1,5 +1,5 @@
 # language: es
-Característica: US05 - Audit log inmutable y enmascaramiento de PII
+Característica: H5 - Audit log inmutable y enmascaramiento de PII
   Como Auditor Clínico y Oficial de Seguridad
   Quiero que cada recomendación de la IA quede registrada de forma inmutable con PII enmascarada
   Para garantizar la trazabilidad por 5 años y cumplir las Leyes 19.628 y 21.719

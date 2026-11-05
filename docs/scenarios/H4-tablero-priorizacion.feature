@@ -1,5 +1,5 @@
 # language: es
-Característica: US04 - Tablero dinámico de priorización para personal médico
+Característica: H4 - Tablero dinámico de priorización para personal médico
   Como Médico Jefe de Turno o Enfermera de Urgencias
   Quiero visualizar la lista de espera ordenada dinámicamente según nivel ESI
   Para gestionar eficientemente los boxes de atención y tiempos de espera
