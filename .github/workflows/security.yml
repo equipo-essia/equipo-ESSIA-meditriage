@@ -26,12 +26,10 @@ jobs:
         run: pip install semgrep
 
       - name: SAST (Semgrep)
-        run: semgrep scan --config p/owasp-top-ten --severity ERROR --error --metrics off .
+        run: semgrep scan --config p/owasp-top-ten --config .semgrep/ --exclude .semgrep --severity ERROR --error --metrics off .
 
-      # Descomentar cuando Cristobal mergee .semgrep/ (paso 6):
-      # - name: Tests de las reglas propias
-      #   run: semgrep --test .semgrep/
-
+      - name: Tests de las reglas propias
+        run: semgrep --test .semgrep/
   sca:
     runs-on: ubuntu-latest
     steps:
