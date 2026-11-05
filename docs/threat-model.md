@@ -1,11 +1,11 @@
 # Modelo de amenazas (STRIDE) · API Backend de MediTriage
 
 - **Autor:** Alonso Plane (QA & Architecture Lead)
-- **Fecha:** 05/11/2026 · **Versión:** 1.1
+- **Fecha:** 05/11/2026 · **Versión:** 1.2 (definitiva S09)
 - **Componente analizado:** API Backend (`main.py`, FastAPI) y su despliegue en Kubernetes (`k8s/`, `Dockerfile`)
 - **Relacionado:** ADR 0002 (monolito modular), ADR 0004 (datos, eventos y plataforma, con su anexo de seguridad), `docs/12-factor-checklist.md`
 
-> **Cómo leer este documento.** La columna *Estado real* describe lo que el repositorio hace **hoy**, verificado contra el código, los manifiestos, los tests y el SBOM. Cada fila es "Implementada" o "Planificada".
+> **Cómo leer este documento.** La columna *Estado real* describe lo que el repositorio hace **hoy**, verificado contra el código, los manifiestos, los tests y el SBOM del último run de CI (`sbom.json`, artefacto `sbom`). Cada fila es "Implementada" o "Planificada".
 
 ## 1. Alcance y supuestos
 
@@ -75,7 +75,7 @@ flowchart LR
 | T2 | Se altera o se pierde el registro de auditoría. | Alto | Tabla append-only en PostgreSQL, hash encadenado y réplica WORM en S3 (anexo del ADR 0004). | 📅 Planificada (PostgreSQL append-only, hash y WORM). Ya existe: solo `append` y ningún endpoint modifica entradas. Vive en memoria y se pierde al reiniciar el pod. | `_audit`; `test_audit_log_is_append_only` |
 | T3 | Datos de entrada maliciosos o fuera de rango. | Medio | Validación de esquema con Pydantic, RUT con módulo 11 y errores uniformes. | ✅ Implementada. Rangos de signos vitales, `fullName` ≤ 200, `symptoms` ≤ 50 elementos y RUT con módulo 11. Mejora planificada: largo máximo por síntoma y formato de `patientId`. | `VitalSigns`, `PatientIn`, `TriageIn`; tests de validación |
 | T4 | Con 2 o más réplicas el estado diverge: un PATCH puede caer en un pod que no tiene la evaluación. | Alto | Persistencia compartida (PostgreSQL). | 📅 Planificada (PostgreSQL). Limitación documentada: factor 6 de 12-Factor incumplido. | `STORE`; ADR 0004; `docs/12-factor-checklist.md` |
-| T5 | Dependencias o imagen alteradas en la cadena de suministro. | Alto | Versiones fijadas, imagen por digest, SAST, SCA y escaneo de secretos en CI, y firma de artefactos. | ✅ Implementada. Versiones fijadas, imagen por digest, SBOM CycloneDX y SCA en CI. Planificado: subir `starlette` (ver sección 5) y firmar artefactos (S10). | `requirements.txt`, `k8s/deployment.yaml`, `.github/workflows/` |
+| T5 | Dependencias o imagen alteradas en la cadena de suministro. | Alto | Versiones fijadas, imagen por digest, SAST, SCA y escaneo de secretos en CI, y firma de artefactos. | ✅ Implementada. Versiones fijadas, imagen por digest, SBOM CycloneDX y los 3 jobs de `security.yml` (SAST, SCA y secretos) en verde. `fastapi` ya fue subido a 0.162.0 (starlette 1.10.0; ver sección 5). Planificado: fijar las transitivas (`starlette` incluida) y firmar artefactos (S10). | `requirements.txt`, `k8s/deployment.yaml`, `.github/workflows/security.yml`, `sbom.json` |
 
 ### R · Repudiation (repudio)
 
@@ -113,18 +113,25 @@ flowchart LR
 | E3 | El token de la ServiceAccount por defecto está montado en el pod aunque la API no usa la API de Kubernetes. | Medio | `automountServiceAccountToken: false` y una ServiceAccount dedicada. | 📅 Planificada. | `k8s/deployment.yaml` |
 | E4 | Movimiento lateral: sin reglas de red, un pod comprometido llega a cualquier otro. | Medio | `NetworkPolicy` con denegación por defecto y excepciones mínimas. | 📅 Planificada. No hay `NetworkPolicy` en `k8s/`. | `k8s/` |
 
-## 5. Hallazgos reales del SCA (starlette 0.36.3)
+## 5. Hallazgos del SCA y su remediación
 
-`fastapi==0.110.0` fija `starlette==0.36.3` (ver `sbom.json`). Los advisories públicos que afectan a esa versión incluyen los siguientes. El reporte del job de SCA es la fuente de verdad: confirmar los identificadores contra él.
+**Antes:** `fastapi==0.110.0` fijaba `starlette==0.36.3`. **Ahora:** `fastapi==0.162.0`, `pydantic==2.14.3` y, según el SBOM, `starlette==1.10.0`. El job `sca` (Trivy sobre el SBOM, severidad HIGH y CRITICAL, solo con corrección disponible) termina en verde.
 
-| Advisory | Tipo | Corregido en | ¿Alcanzable hoy en MediTriage? |
+Advisories públicos que afectaban a `starlette 0.36.3` y su estado con la versión actual:
+
+| Advisory | Tipo | Corregido en | Estado con starlette 1.10.0 |
 |---|---|---|---|
-| CVE-2024-47874 | DoS por `multipart/form-data` | starlette 0.40.0 | No: ningún endpoint declara `Form` ni `File` |
-| CVE-2025-54121 | DoS al procesar archivos grandes en formularios multipart | starlette 0.47.2 | No: mismo motivo |
-| CVE-2026-48818 (PYSEC-2026-2281) | **SSRF** y robo de credenciales NTLM por rutas UNC en `StaticFiles` | starlette 1.1.0 | No: no se usa `StaticFiles` y el contenedor corre en Linux (el fallo es solo de Windows) |
-| CVE-2026-54283 | DoS por límites ignorados en `application/x-www-form-urlencoded` | consultar el advisory | No: el código no llama a `request.form()` |
+| CVE-2024-47874 | DoS por `multipart/form-data` | starlette 0.40.0 | ✅ Corregido (1.10.0 ≥ 0.40.0) |
+| CVE-2025-54121 | DoS al procesar archivos grandes en formularios multipart | starlette 0.47.2 | ✅ Corregido (1.10.0 ≥ 0.47.2) |
+| CVE-2026-48818 (PYSEC-2026-2281) | **SSRF** y robo de credenciales NTLM por rutas UNC en `StaticFiles` | starlette 1.1.0 | ✅ Corregido (1.10.0 ≥ 1.1.0) |
+| CVE-2026-54283 | DoS por límites ignorados en `application/x-www-form-urlencoded` | No confirmada | Sin verificar. El SCA en verde indica que no hay un hallazgo HIGH o CRITICAL con corrección. Si es de otra severidad o no tiene parche, se registra como excepción VEX (ver README) |
 
-**Lectura:** el riesgo real hoy es **bajo**, porque la API solo recibe JSON y no usa las funciones afectadas. Aun así, el riesgo vuelve a ser **alto** apenas alguien agregue un formulario o archivos estáticos, y los escáneres reportarán la versión de todos modos. Mitigación: subir `fastapi` a una versión que permita un `starlette` corregido y volver a correr los tests (tarea de Cristóbal). Mientras tanto, la justificación "no alcanzable" es la base de una excepción VEX con plazo. Esta amenaza se registra en T5.
+**Lectura:** la subida de versión cierra los advisories conocidos. Aun así, ninguno era alcanzable en MediTriage: la API solo recibe JSON, no declara `Form` ni `File`, no usa `StaticFiles` y no llama a `request.form()`.
+
+**Límites del control (qué no cubre el SCA):**
+- Con `severity: HIGH,CRITICAL` e `ignore-unfixed`, los hallazgos Medium o sin corrección **no bloquean** el PR. Se gestionan con el plazo de re-triaje del README (Medium < 90 días).
+- `uvicorn==0.28.0` no se modificó en esta entrega. Revisar su actualización en el siguiente ciclo.
+- No hay excepciones VEX vigentes en este momento.
 
 ## 6. Resumen
 
@@ -144,39 +151,40 @@ flowchart LR
 | 3 | TLS en el Ingress | I3 | Antes de exponer fuera del equipo |
 | 4 | Persistir en PostgreSQL con cifrado y audit append-only con hash | T2, T4, I1, D2 | Siguiente hito de datos |
 | 5 | Deshabilitar `/docs` en producción, no exponer versión ni entorno en `GET /` y agregar rate limiting en el Ingress | I4, D1 | Cambio pequeño |
-| 5b | Subir `fastapi` y `starlette` a versiones sin los advisories de la sección 5 | T5 | Antes del cierre de S09 |
+| 5b | ✅ Hecho: `fastapi` 0.162.0 con `starlette` 1.10.0 (sección 5). Pendiente: fijar `starlette` y las demás transitivas en `requirements.txt` | T5 | Siguiente ciclo |
 | 6 | `automountServiceAccountToken: false` y `NetworkPolicy` | E3, E4 | Cambio pequeño de manifiestos |
 
 ## 8. Relación con los controles del pipeline (S09)
 
 | Control | Amenazas que reduce | Estado |
 |---|---|---|
-| SBOM CycloneDX | T5 (visibilidad de dependencias) | ✅ Generado como artefacto del run del PR #51 y validado (ver 8.1) |
-| SCA | T5 (dependencias vulnerables) | ✅ Activo: reportó los advisories de la sección 5 |
-| SAST (Semgrep, reglas propias) | T3 (patrones inseguros en el código) | Por confirmar con Martín Durán y Cristóbal |
-| Escaneo de secretos (gitleaks) | Credenciales en el repositorio | Por confirmar con Martín Durán |
-| Protección de rama y checks requeridos | T5 (cambios sin revisión ni controles) | Por confirmar con Martín Durán |
+| SBOM CycloneDX | T5 (visibilidad de dependencias) | ✅ Generado como artefacto `sbom` en `security.yml` y validado (ver 8.1) |
+| SCA (Trivy sobre el SBOM) | T5 (dependencias vulnerables) | ✅ Job `sca` en verde con las versiones actuales |
+| SAST (Semgrep: `p/owasp-top-ten` y 2 reglas propias con tests) | T3 (patrones inseguros en el código) | ✅ Job `sast` en verde |
+| Escaneo de secretos (gitleaks, historial completo) | Credenciales en el repositorio | ✅ Job `secrets` en verde |
+| Protección de rama y checks requeridos | T5 (cambios sin revisión ni controles) | ✅ `quality`, `sast`, `sca`, `secrets`) |
 
 ### 8.1 Validación del `sbom.json`
 
 | Comprobación | Resultado |
 |---|---|
-| Formato y versión | CycloneDX 1.6, `serialNumber` UUID válido, marca de tiempo 05/11/2026 |
-| Componentes | 13, todos con `type`, `name`, `version` y `purl` coherentes entre sí |
-| Referencias | `bom-ref` únicos y grafo de dependencias sin referencias rotas |
-| Contra `requirements.txt` | `fastapi 0.110.0`, `uvicorn 0.28.0` y `pydantic 2.6.4` coinciden exactamente |
-| Dependencias de desarrollo | No hay (`pytest`, `ruff` y similares no aparecen) |
-| Licencias | 12 de 13 componentes las declaran |
+| Formato y versión | CycloneDX 1.6, `serialNumber` UUID válido, generado el 05/11/2026 con `cyclonedx-py 8.0.1` |
+| Componentes | 16, todos con `type`, `name`, `version` y `purl` coherentes entre sí |
+| Referencias | `bom-ref` únicos y grafo de dependencias sin referencias rotas (16 entradas) |
+| Contra `requirements.txt` | `fastapi 0.162.0`, `uvicorn 0.28.0` y `pydantic 2.14.3` coinciden exactamente |
+| Transitivas relevantes | `starlette 1.10.0`, `pydantic_core 2.50.4`, `anyio 4.16.0`, `h11 0.16.0`, `click 8.5.0` |
+| Dependencias de desarrollo | No hay (`pytest`, `ruff`, `httpx` y similares no aparecen) |
+| Licencias | 15 de 16 componentes las declaran (falta `setuptools`) |
 
-**Observaciones para mejorar:**
-- Incluye `pip` y `setuptools`: el SBOM se generó desde el entorno de CI, no desde la imagen. Esos paquetes no están en el contenedor (las dependencias se instalan con `--target=/deps`), así que podrían generar falsos positivos en el SCA.
-- Faltan los componentes raíz (`metadata.component`): el SBOM no identifica a la propia aplicación MediTriage ni su versión.
-- Las dependencias transitivas (`anyio`, `h11`, `click`, entre otras) no están fijadas en `requirements.txt`. El SBOM refleja lo que resolvió el CI, y el build de Docker puede resolver otras versiones.
+**Observaciones para mejorar (siguiente ciclo):**
+- Incluye `pip 24.0` y `setuptools 79.0.1`: el SBOM se generó desde el entorno de CI, no desde la imagen. Esos paquetes no están en el contenedor (las dependencias se instalan con `--target=/deps`), así que podrían generar falsos positivos en el SCA. Corrección prevista: crear el venv sin pip.
+- Falta el componente raíz (`metadata.component`): el SBOM no identifica a la propia aplicación MediTriage ni su versión.
+- Las dependencias transitivas (incluida `starlette`) no están fijadas en `requirements.txt`. El SBOM refleja lo que resolvió el CI, y el build de Docker puede resolver otras versiones.
 - No incluye hashes, lo cual es normal en este modo de generación.
 - La validación fue estructural. La validación contra el esquema oficial JSON de CycloneDX debe correrse con `cyclonedx-cli validate`.
 
 ## 9. Mantenimiento de este documento
 
 - Al cerrar una amenaza, cambiar su estado y enlazar el PR que la resolvió.
-- Si cambia la arquitectura (por ejemplo, se agrega PostgreSQL), revisar T2, T4, I1 y D2. Si se actualizan las dependencias, regenerar el SBOM y revisar T5 y la sección 5.
+- Si cambia la arquitectura (por ejemplo, se agrega PostgreSQL), revisar T2, T4, I1 y D2. Si se actualizan las dependencias, regenerar el SBOM y revisar T5, la sección 5 y la 8.1.
 - Revisar el modelo completo antes de cada hito de entrega.
