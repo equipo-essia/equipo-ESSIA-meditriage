@@ -1,0 +1,38 @@
+rules:
+  - id: fastapi-endpoint-missing-auth
+    languages: [python]
+    severity: ERROR
+    message: El endpoint no declara Depends(require_auth).
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @$APP.$METHOD(...)
+              def $F(...):
+                  ...
+          - pattern: |
+              @$APP.$METHOD(...)
+              async def $F(...):
+                  ...
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(get|post|put|patch|delete)$
+      - pattern-not: |
+          @$APP.$METHOD(...)
+          def $F(..., $P = Depends(require_auth), ...):
+              ...
+      - pattern-not: |
+          @$APP.$METHOD(...)
+          async def $F(..., $P = Depends(require_auth), ...):
+              ...
+      - pattern-not: |
+          @$APP.$METHOD(..., dependencies=[Depends(require_auth)], ...)
+          def $F(...):
+              ...
+      - pattern-not: |
+          @$APP.$METHOD(..., dependencies=[Depends(require_auth)], ...)
+          async def $F(...):
+              ...
+      - pattern-not: |
+          @$APP.get("/health")
+          def $F(...):
+              ...
