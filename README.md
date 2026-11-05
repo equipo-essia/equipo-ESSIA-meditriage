@@ -178,4 +178,4 @@ Diagramas C4: [`docs/c4/`](docs/c4/)
 - Sin shell en la imagen distroless, no se puede usar `kubectl exec`. Se depura con logs.
 - El `GITOPS_TOKEN` es un Personal Access Token que vence cada 90 días y hay que rotarlo a mano (ver ADR 0005).
 - El entorno `prod` del repo gitops es solo estructura; no hay clúster de producción.
-- En el clúster local el Ingress no recibe dirección IP, por eso Argo CD lo ignora en la comparación (`ignoreDifferences`).
+- En el clúster local el Ingress no recibe dirección IP. Se configuró en argocd-cm una regla de salud personalizada (resource.customizations.health) para que Argo CD lo considere sano. En producción (EKS) se usaría un ingress controller real.
