@@ -179,3 +179,62 @@ Diagramas C4: [`docs/c4/`](docs/c4/)
 - El `GITOPS_TOKEN` es un Personal Access Token que vence cada 90 días y hay que rotarlo a mano (ver ADR 0005).
 - El entorno `prod` del repo gitops es solo estructura; no hay clúster de producción.
 - En el clúster local el Ingress no recibe dirección IP. Se configuró en argocd-cm una regla de salud personalizada (resource.customizations.health) para que Argo CD lo considere sano. En producción (EKS) se usaría un ingress controller real.
+
+## Seguridad en el pipeline (S09)
+
+Cada Pull Request ejecuta `.github/workflows/security.yml` con tres jobs en paralelo. Los tres son gates bloqueantes.
+
+| Job | Herramienta | Qué detecta |
+|---|---|---|
+| `sast` | Semgrep (reglas gestionadas + reglas propias en `.semgrep/`) | Bugs de código y reglas del proyecto, como endpoints sin `Depends(require_auth)` |
+| `sca` | Trivy (filesystem) + SBOM CycloneDX | CVE en dependencias directas y transitivas |
+| `secrets` | gitleaks (historial completo) | Credenciales y tokens, incluso en commits antiguos |
+
+El SBOM (`sbom.json`, CycloneDX) se publica como artefacto `sbom` de cada run: en **Actions**, abrir el run y bajar a "Artifacts".
+
+### Cómo revisar un hallazgo
+
+1. Abrir el check fallido en el PR y leer el log del job.
+2. Reproducirlo en local:
+   ```bash
+   semgrep scan --config .semgrep/ .
+   trivy fs --severity HIGH,CRITICAL --ignore-unfixed .
+   gitleaks detect --source . --redact
+   ```
+3. Priorizar con tres preguntas, no solo con el CVSS:
+   - ¿Se llega al componente vulnerable desde la red?
+   - ¿Qué dato queda expuesto? (datos clínicos y RUT son de criticidad alta)
+   - ¿Existe versión corregida?
+4. Decidir: **corregir**, **justificar con VEX** o **ajustar la regla** si es falso positivo.
+
+### Plazos de remediación
+
+El plazo corre desde la fecha de detección.
+
+| Severidad | Plazo máximo |
+|---|---|
+| Critical | 7 días |
+| High | 30 días |
+| Medium | 90 días |
+
+### Falsos positivos
+
+Un falso positivo de Semgrep se resuelve con un **PR que ajusta la regla** en `.semgrep/`, nunca con un `nosec` silencioso. Ejemplo real: la regla de autenticación marcó `/health` y `/`, que son públicos a propósito (probes de Kubernetes).
+
+### Cómo solicitar una excepción (VEX)
+
+Si un CVE no aplica a nuestro contexto, se declara en la descripción de un PR:
+
+| Campo | Contenido |
+|---|---|
+| CVE y componente | `CVE-XXXX-XXXXX` en `paquete==versión` |
+| Estado | `not_affected`, `affected`, `fixed` o `under_investigation` |
+| Justificación | por qué no aplica (código no presente o no alcanzable) |
+| Evidencia | enlace al código, a la prueba o al aviso |
+| Responsable | quién responde si cambia el contexto |
+| Revisión | fecha de reevaluación (máximo 90 días) |
+
+Reglas:
+- La excepción la aprueba un revisor distinto al autor (`CHARTER.md`).
+- Vence en la fecha de revisión y se reevalúa.
+- Los secretos no admiten excepción: se rota la credencial, aunque ya esté borrada del historial.
