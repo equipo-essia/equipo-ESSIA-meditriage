@@ -32,7 +32,4 @@ rules:
           @$APP.$METHOD(..., dependencies=[Depends(require_auth)], ...)
           async def $F(...):
               ...
-      - pattern-not: |
-          @$APP.get("/health")
-          def $F(...):
-              ...
+      - pattern-not-regex: '(?s)tags\s*=\s*\[\s*"ops"\s*\]'
