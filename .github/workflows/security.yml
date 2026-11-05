@@ -1,0 +1,82 @@
+name: security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar Semgrep
+        run: pip install semgrep
+
+      - name: SAST (Semgrep)
+        run: semgrep scan --config p/owasp-top-ten --severity ERROR --error --metrics off .
+
+      # Descomentar cuando Cristobal mergee .semgrep/ (paso 6):
+      # - name: Tests de las reglas propias
+      #   run: semgrep --test .semgrep/
+
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias de la app en un venv aparte
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Generar SBOM CycloneDX (incluye dependencias transitivas)
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py environment --of JSON -o sbom.json .venv
+
+      - name: Publicar SBOM como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+
+      - name: SCA (Trivy sobre el SBOM)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: sbom
+          scan-ref: sbom.json
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: "true"
+          exit-code: "1"
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secretos (gitleaks, historial completo)
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --no-banner
+          
