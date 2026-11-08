@@ -1,0 +1,150 @@
+name: scans
+
+# Escaneos de IaC, contenedor y DAST. Se ejecuta en cada PR y en cada push a main.
+# Para probar que cada compuerta bloquea de verdad: Actions > scans > "Run workflow" y
+# elegir una prueba negativa. El job elegido DEBE quedar en rojo. Nunca mergear esa corrida.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      negative_test:
+        description: "Prueba negativa: inyecta un fallo a propósito (el job correspondiente debe fallar)"
+        type: choice
+        default: none
+        options: [none, iac, container, dast]
+  workflow_call:   # permite que ci.yml la use como requisito previo a firmar la imagen
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scans-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  IMAGE: meditriage:scan
+  NEGATIVE_TEST: ${{ inputs.negative_test || 'none' }}
+
+jobs:
+  iac-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Prueba negativa: grupo de seguridad con SSH abierto al mundo"
+        if: env.NEGATIVE_TEST == 'iac'
+        run: |
+          cat > terraform/zz_negative_test.tf <<'EOF'
+          resource "aws_security_group" "negative_test" {
+            name = "negative-test"
+
+            ingress {
+              from_port   = 22
+              to_port     = 22
+              protocol    = "tcp"
+              cidr_blocks = ["0.0.0.0/0"]
+            }
+          }
+          EOF
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar Checkov
+        run: pip install checkov==3.3.16
+
+      - name: IaC scan (Checkov sobre terraform/)
+        run: checkov -d terraform/ --framework terraform --compact --quiet
+
+  container-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Prueba negativa: dependencia con CVE High conocidas dentro de la imagen"
+        if: env.NEGATIVE_TEST == 'container'
+        run: printf '\nurllib3==1.24.1\n' >> requirements.txt
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Construir la imagen (sin publicarla)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          provenance: false
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha,scope=scans
+          cache-to: type=gha,scope=scans,mode=max
+
+      - name: Escaneo de la imagen (Trivy)
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          format: table
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: "true"
+          exit-code: "1"
+
+  dast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Prueba negativa: el API filtra la cabecera X-Powered-By"
+        if: env.NEGATIVE_TEST == 'dast'
+        run: |
+          cat >> main.py <<'EOF'
+
+
+          @app.middleware("http")
+          async def _negative_test_header(request, call_next):
+              response = await call_next(request)
+              response.headers["X-Powered-By"] = "PHP/5.2.0"
+              return response
+          EOF
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Construir la imagen (sin publicarla)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          provenance: false
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha,scope=scans
+          cache-to: type=gha,scope=scans,mode=max
+
+      - name: Levantar el API en el runner
+        run: |
+          docker run -d --name meditriage-dast -p 8000:8000 -e APP_ENV=production "$IMAGE"
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs meditriage-dast
+          exit 1
+
+      - name: DAST (ZAP baseline)
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: http://localhost:8000
+          rules_file_name: .zap/rules.tsv
+          fail_action: true
+          allow_issue_writing: false
+          artifact_name: zap-baseline-report
+
+      - name: Logs del API y limpieza
+        if: always()
+        run: |
+          docker logs meditriage-dast || true
+          docker rm -f meditriage-dast || true
