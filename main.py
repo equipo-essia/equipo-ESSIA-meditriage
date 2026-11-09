@@ -230,6 +230,7 @@ app = FastAPI(
     description="Servicio mínimo de MediTriage (S07). Estado en memoria; motor ESI por reglas.",
 )
 
+
 @app.middleware("http")
 async def security_headers(request, call_next):
     response = await call_next(request)
@@ -237,6 +238,7 @@ async def security_headers(request, call_next):
     response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     response.headers["Cache-Control"] = "no-store"
     return response
+
 
 @app.exception_handler(Problem)
 async def _problem_handler(request: Request, exc: Problem):
