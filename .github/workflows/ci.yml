@@ -3,7 +3,7 @@ name: ci-meditriage
 on:
   pull_request:
   push:
-    branches: [main, feature/sign-and-attest]   # TEMPORAL: quitar feature/sign-and-attest antes del PR
+    branches: [main]   
 
 permissions:
   contents: read
@@ -119,8 +119,8 @@ jobs:
 
   sign-and-attest:
     needs: build-and-push
-    # TEMPORAL: la segunda condición (feature/sign-and-attest) se quita antes del PR
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/sign-and-attest')
+    
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
