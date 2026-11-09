@@ -38,8 +38,11 @@ jobs:
       - name: Tests y cobertura (>= 70 %)
         run: pytest --cov=main --cov-report=term-missing --cov-fail-under=70
 
+  scans:
+    uses: ./.github/workflows/scans.yml
+
   build-and-push:
-    needs: quality
+    needs: [quality, scans]
     runs-on: ubuntu-latest
     permissions:
       contents: read
