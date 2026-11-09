@@ -93,6 +93,9 @@ jobs:
           severity: "HIGH,CRITICAL"
           ignore-unfixed: "true"
           exit-code: "1"
+          # Excepciones VEX documentadas para CVEs del SO de la imagen distroless.
+          # Cualquier CVE nuevo o de dependencias Python sigue bloqueando el job.
+          trivyignores: .trivyignore
 
   dast:
     runs-on: ubuntu-latest
