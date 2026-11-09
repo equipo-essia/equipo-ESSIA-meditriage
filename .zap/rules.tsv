@@ -1,0 +1,12 @@
+# Reglas del baseline de ZAP. Formato: ID<TAB>ACCION<TAB>nota. Acciones: IGNORE, INFO, WARN, FAIL.
+# Con fail_action: true en scans.yml, CUALQUIER alerta (incluso WARN) hace fallar el job.
+# 10049 se ignora a proposito: el middleware de seguridad responde Cache-Control: no-store,
+# que es justo lo que queremos para /health y para los datos clinicos. ZAP lo reporta como
+# WARN "Non-Storable Content" y es un falso positivo (no hay contenido cacheable que exponer).
+10023	FAIL	(Information Disclosure - Debug Error Messages)
+10037	FAIL	(Server Leaks Information via X-Powered-By)
+90022	FAIL	(Application Error Disclosure)
+10098	FAIL	(Cross-Domain Misconfiguration)
+10021	FAIL	(X-Content-Type-Options Header Missing)
+10049	IGNORE	(Non-Storable Content: falso positivo por Cache-Control: no-store intencional)
+90004	FAIL	(Cross-Origin-Resource-Policy Header Missing or Invalid)

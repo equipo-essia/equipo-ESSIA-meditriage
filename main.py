@@ -231,6 +231,15 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 @app.exception_handler(Problem)
 async def _problem_handler(request: Request, exc: Problem):
     return problem_response(request, exc.status, exc.title, exc.detail, exc.slug, exc.headers)
