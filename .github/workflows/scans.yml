@@ -1,8 +1,9 @@
 name: scans
 
 # Escaneos de IaC, contenedor y DAST. Se ejecuta en cada PR y en cada push a main.
-# Para probar que cada compuerta bloquea de verdad: Actions > scans > "Run workflow" y
-# elegir una prueba negativa. El job elegido DEBE quedar en rojo. Nunca mergear esa corrida.
+# Para probar que cada compuerta bloquea de verdad: en una rama desechable cambiar 'none' por
+# 'iac', 'container' o 'dast' en NEGATIVE_TEST y abrir un PR en borrador. El job elegido DEBE
+# quedar en rojo. Nunca mergear esa rama. (Run workflow solo aparece si el workflow esta en main.)
 on:
   pull_request:
   push:
@@ -78,6 +79,7 @@ jobs:
           context: .
           load: true
           push: false
+          pull: true
           provenance: false
           tags: ${{ env.IMAGE }}
           cache-from: type=gha,scope=scans
@@ -119,6 +121,7 @@ jobs:
           context: .
           load: true
           push: false
+          pull: true
           provenance: false
           tags: ${{ env.IMAGE }}
           cache-from: type=gha,scope=scans
