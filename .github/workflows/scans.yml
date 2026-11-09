@@ -1,13 +1,11 @@
 name: scans
 
-# Escaneos de IaC, contenedor y DAST. Se ejecuta en cada PR y en cada push a main.
+# Escaneos de IaC, contenedor y DAST. Se ejecuta como workflow reutilizable desde ci.yml
+# (una sola vez por PR/push) y tambien a mano con workflow_dispatch.
 # Para probar que cada compuerta bloquea de verdad: en una rama desechable cambiar 'none' por
 # 'iac', 'container' o 'dast' en NEGATIVE_TEST y abrir un PR en borrador. El job elegido DEBE
-# quedar en rojo. Nunca mergear esa rama. (Run workflow solo aparece si el workflow esta en main.)
+# quedar en rojo. Nunca mergear esa rama.
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       negative_test:
@@ -15,7 +13,7 @@ on:
         type: choice
         default: none
         options: [none, iac, container, dast]
-  workflow_call:   # permite que ci.yml la use como requisito previo a firmar la imagen
+  workflow_call:   # lo invoca ci.yml como requisito previo a build-and-push
 
 permissions:
   contents: read

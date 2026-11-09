@@ -1,48 +1,61 @@
-# Excepciones VEX temporales para meditriage:scan (gate container-scan).
+# Excepciones VEX de meditriage:scan (gate container-scan).
 #
-# Origen: los 21 CVEs siguientes NO estan en dependencias de la aplicacion. Pertenecen a
-# paquetes del sistema operativo Debian 12 que vienen dentro de la imagen base inmutable
-# gcr.io/distroless/python3-debian12:nonroot (libexpat1, libpython3.11-*, libssl3 y libkrb5*).
+# Contexto: son 21 CVEs HIGH de paquetes del SO Debian 12 que vienen en la imagen base
+# inmutable gcr.io/distroless/python3-debian12:nonroot. No pertenecen a dependencias Python
+# de la aplicacion. La imagen es distroless (sin shell, sin apt, sin compilador, UID 65532),
+# por lo que no se pueden parchear con apt: la correccion depende de una nueva capa de Google.
 #
-# Por que se aceptan (estado VEX: not_affected / pendiente de base actualizada):
-#   - La imagen final es distroless: no tiene shell, ni apt, ni compilador, y corre como UID
-#     65532. La superficie para explotar estos CVEs desde los endpoints de MediTriage es nula.
-#   - La correccion real depende de que Google publique una nueva capa de la imagen base;
-#     el Dockerfile ya usa `pull: true` en CI para tomarla en cuanto exista. No se puede
-#     parchear con apt dentro de distroless.
-#   - El job sigue bloqueando cualquier CVE NUEVO, cualquier CVE de las dependencias Python
-#     (fastapi, uvicorn, pydantic, starlette, etc.) y cualquier CVE no listado aqui.
-#
-# Fecha maxima de revision / expiracion: 2027-02-07 (90 dias desde 2026-11-09).
-# `exp:` hace que Trivy deje de ignorar cada CVE automaticamente en esa fecha; a partir de
-# ahi el job vuelve a fallar hasta corregir la imagen base o renovar la excepcion.
+# Regla de este archivo: cada entrada lleva su justificacion y vence a los 30 dias
+# (maximo 2026-12-09). Al vencer, Trivy vuelve a reportar el CVE y el job falla hasta que
+# se actualice la imagen base o se renueve la excepcion con nueva evidencia.
 # Revisor distinto al autor segun el proceso VEX del README.
 
 # --- libexpat1 ---
-CVE-2024-28757 exp:2027-02-07
-CVE-2025-59375 exp:2027-02-07
-CVE-2026-25210 exp:2027-02-07
-CVE-2026-45186 exp:2027-02-07
-CVE-2026-66046 exp:2027-02-07
-CVE-2026-76957 exp:2027-02-07
-CVE-2026-77214 exp:2027-02-07
-CVE-2026-93990 exp:2027-02-07
+# CVE-2024-28757: expansion de entidades XML; la API no parsea XML de entrada.
+CVE-2024-28757 exp:2026-12-09
+# CVE-2025-59375: fallo en libexpat; no hay parsing XML expuesto en los endpoints.
+CVE-2025-59375 exp:2026-12-09
+# CVE-2026-25210: divulgacion de informacion en libexpat; no se procesa XML externo.
+CVE-2026-25210 exp:2026-12-09
+# CVE-2026-45186: DoS con XML manipulado; la API no recibe XML.
+CVE-2026-45186 exp:2026-12-09
+# CVE-2026-66046: DoS por complejidad cuadratica en expat; no se usa expat en runtime.
+CVE-2026-66046 exp:2026-12-09
+# CVE-2026-76957: corrupcion de memoria en libexpat; no alcanzable desde la API.
+CVE-2026-76957 exp:2026-12-09
+# CVE-2026-77214: divulgacion de informacion en expat; no se procesa XML externo.
+CVE-2026-77214 exp:2026-12-09
+# CVE-2026-93990: inyeccion XML con UTF-16 malformado; no se procesa XML.
+CVE-2026-93990 exp:2026-12-09
 
 # --- libpython3.11-minimal / libpython3.11-stdlib / python3.11-minimal ---
-CVE-2025-13836 exp:2027-02-07
-CVE-2025-69534 exp:2027-02-07
-CVE-2026-15308 exp:2027-02-07
-CVE-2026-19445 exp:2027-02-07
-CVE-2026-19553 exp:2027-02-07
-CVE-2026-3644 exp:2027-02-07
-CVE-2026-4224 exp:2027-02-07
-CVE-2026-6100 exp:2027-02-07
-CVE-2026-8328 exp:2027-02-07
+# CVE-2025-13836: DoS por buffering excesivo en http.client; la API no hace llamadas salientes.
+CVE-2025-13836 exp:2026-12-09
+# CVE-2025-69534: DoS de python-markdown con HTML malformado; markdown no se usa.
+CVE-2025-69534 exp:2026-12-09
+# CVE-2026-15308: DoS de CPU en el parser HTML; la API no parsea HTML.
+CVE-2026-15308 exp:2026-12-09
+# CVE-2026-19445: use-after-free de SSLContext en servidor; no se crea contexto TLS propio.
+CVE-2026-19445 exp:2026-12-09
+# CVE-2026-19553: bypass de verificacion de certificados; la app no inicia conexiones TLS.
+CVE-2026-19553 exp:2026-12-09
+# CVE-2026-3644: validacion incompleta de caracteres de control; no alcanzable desde la API.
+CVE-2026-3644 exp:2026-12-09
+# CVE-2026-4224: stack overflow al parsear XML con DTD anidado; no se procesa XML.
+CVE-2026-4224 exp:2026-12-09
+# CVE-2026-6100: ejecucion de codigo o divulgacion en Python; no hay entrada que lo alcance.
+CVE-2026-6100 exp:2026-12-09
+# CVE-2026-8328: redireccion de conexiones FTP via ftpcp(); la API no usa FTP.
+CVE-2026-8328 exp:2026-12-09
 
 # --- libgssapi-krb5-2 / libk5crypto3 / libkrb5-3 / libkrb5support0 ---
-CVE-2026-40355 exp:2027-02-07
-CVE-2026-40356 exp:2027-02-07
+# CVE-2026-40355: DoS de Kerberos por puntero NULL; Kerberos no se usa en la aplicacion.
+CVE-2026-40355 exp:2026-12-09
+# CVE-2026-40356: DoS de Kerberos por desbordamiento de entero; Kerberos no se usa.
+CVE-2026-40356 exp:2026-12-09
 
 # --- libssl3 ---
-CVE-2026-45447 exp:2027-02-07
-CVE-2026-84782 exp:2027-02-07
+# CVE-2026-45447: use-after-free en OpenSSL PKCS7_verify(); la app no verifica PKCS7.
+CVE-2026-45447 exp:2026-12-09
+# CVE-2026-84782: divulgacion de informacion en OpenSSL; no alcanzable desde los endpoints.
+CVE-2026-84782 exp:2026-12-09
