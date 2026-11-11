@@ -3,7 +3,7 @@ name: ci-meditriage
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main]   
 
 permissions:
   contents: read
@@ -116,3 +116,62 @@ jobs:
           gh pr create --repo "$GITOPS_REPO" --base main --head "$BRANCH" \
             --title "chore(dev): promover imagen ${GITHUB_SHA::7}" \
             --body "Imagen publicada por CI desde ${GITHUB_REPOSITORY}@${GITHUB_SHA}."
+
+  sign-and-attest:
+    needs: build-and-push
+    
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    env:
+      IMAGE: ${{ needs.build-and-push.outputs.image }}
+      DIGEST: ${{ needs.build-and-push.outputs.digest }}
+      IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/ci.yml@${{ github.ref }}
+      ISSUER: https://token.actions.githubusercontent.com
+    steps:
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # <v4.1.3>
+        with:
+          cosign-release: 'v2.6.5'
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Firmar (keyless)
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
+
+      - name: Generar predicate SLSA provenance
+        run: |
+          cat > provenance.json <<EOF
+          {
+            "buildType": "https://github.com/actions/runner",
+            "builder": { "id": "${IDENTITY}" },
+            "invocation": {
+              "configSource": {
+                "uri": "git+https://github.com/${GITHUB_REPOSITORY}@${GITHUB_REF}",
+                "digest": { "sha1": "${GITHUB_SHA}" },
+                "entryPoint": ".github/workflows/ci.yml"
+              }
+            },
+            "metadata": { "buildInvocationId": "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" }
+          }
+          EOF
+
+      - name: Attestation SLSA
+        run: cosign attest --yes --type slsaprovenance --predicate provenance.json "${IMAGE}@${DIGEST}"
+
+      - name: Verificar firma
+        run: cosign verify --certificate-identity "${IDENTITY}" --certificate-oidc-issuer "${ISSUER}" "${IMAGE}@${DIGEST}"
+
+      - name: Verificar attestation
+        run: cosign verify-attestation --type slsaprovenance --certificate-identity "${IDENTITY}" --certificate-oidc-issuer "${ISSUER}" "${IMAGE}@${DIGEST}"
+
+      - name: Resumen para el equipo
+        run: |
+          echo "Imagen: ${IMAGE}@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Identidad: ${IDENTITY}" >> "$GITHUB_STEP_SUMMARY"
