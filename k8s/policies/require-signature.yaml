@@ -1,0 +1,47 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-image-signature
+  annotations:
+    policies.kyverno.io/title: Exigir imagen firmada con Cosign (keyless)
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/description: >-
+      Los pods del namespace meditriage solo se admiten si su imagen fue firmada
+      por el workflow oficial de GitHub Actions (identidad OIDC, sin llaves).
+spec:
+  # Empezar en Audit (solo registra). Pasar a Enforce cuando el Deployment
+  # ya apunte a una imagen firmada.
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: verify-meditriage-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - meditriage
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/equipo-essia/meditriage*"
+            # Solo para la prueba de rechazo (imagen antigua sin firmar).
+            # Quitar esta línea cuando termine la prueba.
+            - "ghcr.io/guffy0921/meditriage*"
+          mutateDigest: false
+          attestors:
+            # count: 1 => basta que coincida UNA de las identidades (OR).
+            - count: 1
+              entries:
+                # Identidad temporal (rama de feature). Quitar cuando Durán mergee a main.
+                - keyless:
+                    subject: "https://github.com/equipo-essia/equipo-ESSIA-meditriage/.github/workflows/ci.yml@refs/heads/feature/sign-and-attest"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: https://rekor.sigstore.dev
+                # Identidad definitiva (main).
+                - keyless:
+                    subject: "https://github.com/equipo-essia/equipo-ESSIA-meditriage/.github/workflows/ci.yml@refs/heads/main"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: https://rekor.sigstore.dev
