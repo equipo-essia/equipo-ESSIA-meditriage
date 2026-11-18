@@ -1,0 +1,16 @@
+rules:
+  - id: pii-in-logs
+    languages: [python]
+    severity: ERROR
+    message: >
+      Se está registrando PII (rut/fullName) sin enmascarar.
+      Usa mask_rut() antes de loguear (Charter: protección de datos personales).
+    patterns:
+      - pattern-either:
+          - pattern: $LOG.$METHOD(..., $X.rut, ...)
+          - pattern: $LOG.$METHOD(..., $X.fullName, ...)
+          - pattern: $LOG.$METHOD(f"...{$X.rut}...", ...)
+          - pattern: $LOG.$METHOD(f"...{$X.fullName}...", ...)
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: ^(log|logger|logging)$

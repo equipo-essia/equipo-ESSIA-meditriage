@@ -62,6 +62,13 @@ def test_health_does_not_require_auth():
     assert client.get("/health").status_code == 200
 
 
+def test_security_headers_present():
+    response = client.get("/health")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["cross-origin-resource-policy"] == "same-origin"
+    assert response.headers["cache-control"] == "no-store"
+
+
 def test_root_returns_service_info():
     body = client.get("/").json()
     assert body["service"] == "meditriage-api"

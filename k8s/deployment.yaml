@@ -32,7 +32,7 @@ spec:
       containers:
         - name: api
           # Imagen fijada por digest (nunca :latest), publicada en GHCR por Martín Garrido (Guffy).
-          image: ghcr.io/guffy0921/meditriage@sha256:11a9c511d4ea3351a32c286e1031c35da57a313d298db8dec4091022977e8971
+          image: ghcr.io/equipo-essia/meditriage@sha256:6f90a5ba7122abc570d69790cf7dc71f92928874b93db70f65fd8d8cb9b84b21
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

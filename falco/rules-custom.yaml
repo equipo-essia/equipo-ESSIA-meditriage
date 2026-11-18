@@ -1,0 +1,42 @@
+# Reglas Falco propias de MediTriage. Se cargan junto a las reglas por defecto.
+# Alcance: pods del namespace "meditriage".
+
+- macro: meditriage_ns
+  condition: (container.id != host and k8s.ns.name = "meditriage")
+
+- rule: Shell interactivo en pod de MediTriage
+  desc: >
+    Shell interactivo dentro de un pod de MediTriage.
+  condition: >
+    evt.type in (execve, execveat) and evt.dir = < and
+    container.id != host and meditriage_ns and
+    proc.name in (sh, bash, ash, dash, zsh) and proc.tty != 0
+  output: >
+    Shell interactivo en pod de MediTriage (pod=%k8s.pod.name ns=%k8s.ns.name
+    user=%user.name proc=%proc.name cmd=%proc.cmdline image=%container.image.repository)
+  priority: CRITICAL
+  tags: [meditriage, shell, mitre_execution]
+
+- rule: Escritura en /etc o /app en pod de MediTriage
+  desc: >
+    Escritura en rutas protegidas dentro de un pod de MediTriage.
+  condition: >
+    evt.type in (open, openat, openat2) and evt.is_open_write = true and evt.dir = < and
+    meditriage_ns and (fd.name startswith /etc/ or fd.name startswith /app/)
+  output: >
+    Escritura en ruta protegida en pod de MediTriage (file=%fd.name pod=%k8s.pod.name
+    user=%user.name proc=%proc.name image=%container.image.repository)
+  priority: ERROR
+  tags: [meditriage, filesystem, mitre_persistence]
+
+- rule: Conexion saliente inesperada desde pod de MediTriage
+  desc: >
+    Conexion de red saliente desde un pod de MediTriage.
+  condition: >
+    evt.type = connect and evt.dir = < and meditriage_ns and
+    fd.typechar = 4 and not fd.snet in (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8)
+  output: >
+    Conexion saliente inesperada desde MediTriage (destino=%fd.sip:%fd.sport pod=%k8s.pod.name
+    proc=%proc.name image=%container.image.repository)
+  priority: ERROR
+  tags: [meditriage, network, mitre_command_and_control]
