@@ -100,7 +100,12 @@ jobs:
       - name: Apuntar overlays/dev al digest nuevo
         working-directory: gitops/overlays/dev
         run: |
-          kustomize edit set image ghcr.io/guffy0921/meditriage=${{ needs.build-and-push.outputs.image }}@${{ needs.build-and-push.outputs.digest }}
+          IMAGE="${{ needs.build-and-push.outputs.image }}@${{ needs.build-and-push.outputs.digest }}"
+          # Nombre canonico (el mismo que se firma y exige Kyverno).
+          kustomize edit set image "${{ needs.build-and-push.outputs.image }}=${IMAGE}"
+          # Compatibilidad mientras el overlay termina de migrar desde el nombre antiguo.
+          # Retirar esta linea cuando el overlay solo use el nombre canonico.
+          kustomize edit set image "ghcr.io/guffy0921/meditriage=${IMAGE}"
 
       - name: Abrir PR en el repo gitops
         working-directory: gitops

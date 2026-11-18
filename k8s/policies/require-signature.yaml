@@ -25,15 +25,17 @@ spec:
       verifyImages:
         - imageReferences:
             - "ghcr.io/equipo-essia/meditriage*"
-            # Solo para la prueba de rechazo (imagen antigua sin firmar).
-            # Quitar esta línea cuando termine la prueba.
+            # EXCEPCION TEMPORAL: solo para la prueba de rechazo (imagen sin firmar).
+            # Retirar antes del 2026-12-09, al cerrar la prueba de admision.
             - "ghcr.io/guffy0921/meditriage*"
           mutateDigest: false
           attestors:
             # count: 1 => basta que coincida UNA de las identidades (OR).
             - count: 1
               entries:
-                # Identidad temporal (rama de feature). Quitar cuando Durán mergee a main.
+                # EXCEPCION TEMPORAL: el digest desplegado hoy se firmo desde esta rama.
+                # Retirar antes del 2026-12-09, cuando el Deployment apunte a un digest
+                # firmado desde main y se haya verificado en el cluster.
                 - keyless:
                     subject: "https://github.com/equipo-essia/equipo-ESSIA-meditriage/.github/workflows/ci.yml@refs/heads/feature/sign-and-attest"
                     issuer: "https://token.actions.githubusercontent.com"

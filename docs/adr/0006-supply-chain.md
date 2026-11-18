@@ -45,11 +45,13 @@ T7 (misconfiguración), según `docs/threat-model.md`.
 - **Excepción temporal:** el digest desplegado
   (`ghcr.io/equipo-essia/meditriage@sha256:6f90a5ba7122abc570d69790cf7dc71f92928874b93db70f65fd8d8cb9b84b21`)
   se firmó desde la rama `feature/sign-and-attest`, por lo que la policy acepta
-  también esa identidad. Se retira cuando el Deployment apunte a un digest firmado
-  desde `main`.
+  también esa identidad. No se ha retirado todavía: hacerlo ahora dejaría sin
+  admitir el pod que hoy está desplegado. Se retira cuando el Deployment apunte a
+  un digest firmado desde `main` y se verifique en el clúster. **Fecha límite:
+  2026-12-09.**
 - La policy incluye además la referencia `ghcr.io/guffy0921/meditriage*`, usada solo
   para demostrar el rechazo de una imagen sin firma. Debe retirarse al cerrar la
-  prueba.
+  prueba. **Fecha límite: 2026-12-09.**
 - La policy rechaza los pods del namespace `meditriage` cuya imagen no tenga una
   firma válida de una de esas identidades.
 
@@ -90,7 +92,8 @@ de alertas (Falcosidekick, Alertmanager, Slack o email) está descrita en
 - ZAP baseline es pasivo y sin autenticación; el escaneo activo de la API
   autenticada queda pendiente.
 - La excepción temporal de la rama `feature/sign-and-attest` y la referencia
-  `guffy0921` siguen en la policy hasta que exista un digest firmado desde `main`.
+  `guffy0921` siguen en la policy: ya existe un job que firma desde `main`, pero el
+  Deployment todavía apunta al digest antiguo. Retirar ambas antes del 2026-12-09.
 - Keyless depende de Fulcio y Rekor públicos: si Sigstore falla, el release se
   bloquea.
 - La ruta de alertas de Falco no está desplegada.
@@ -102,20 +105,22 @@ de alertas (Falcosidekick, Alertmanager, Slack o email) está descrita en
 - Verificar una imagen: sección "Cómo verificar una imagen firmada (S10)" del
   `README.md`.
 - Revisar las excepciones de `.trivyignore` antes del 2026-12-09.
+- Retirar las dos excepciones temporales de `k8s/policies/require-signature.yaml`
+  antes del 2026-12-09, después de promover un digest firmado desde `main`.
 - Ante una alerta de Falco, seguir `docs/falco-alertas.md`.
 
 ## 9. Evidencias
 
-- Run del pipeline: <RUN_URL>
-- Checks del PR #60: `docs/img/s10-checks-verdes.png`
-- `cosign verify` (verificación externa):
-  ```
-  <pegar salida>
-  ```
-- `cosign verify-attestation` (verificación externa):
-  ```
-  <pegar salida>
-  ```
+- Run del pipeline: **pendiente de enlazar** (el run de `main` que publicó el digest
+  fijado en `k8s/deployment.yaml`).
+- Checks del PR #60: la captura referenciada antes como
+  `docs/img/s10-checks-verdes.png` no está incluida en el entregable; no se deja un
+  enlace roto. La evidencia disponible son los checks del PR y el artefacto
+  `zap-baseline-report` del run.
+- `cosign verify` (verificación externa): salida **pendiente de pegar**. Reproducible
+  con el comando del apartado "Cómo verificar una imagen firmada (S10)" del `README.md`.
+- `cosign verify-attestation` (verificación externa): salida **pendiente de pegar**.
+  Reproducible con el comando del mismo apartado del `README.md`.
 - Imagen firmada aceptada: `docs/img/s10-04-pods-imagen-firmada.png`
 - Policy en Enforce: `docs/img/s10-05-policy-enforce.png`
 - Imagen sin firma rechazada: `docs/img/s10-06-rechazo-sin-firma.png`

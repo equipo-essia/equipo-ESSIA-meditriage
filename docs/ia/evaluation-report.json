@@ -1,0 +1,18 @@
+{
+  "evaluated_at": "2026-11-18T19:00:42.365921+00:00",
+  "target": "main.classify_esi",
+  "golden_set_version": "1.0",
+  "total": 44,
+  "passed": 44,
+  "accuracy": 1.0,
+  "category_cases": 42,
+  "justification_cases": 2,
+  "correct_by_category": {
+    "1": 11,
+    "2": 15,
+    "3": 9,
+    "4": 2,
+    "5": 5
+  },
+  "failures": []
+}

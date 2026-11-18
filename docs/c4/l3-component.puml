@@ -1,0 +1,71 @@
+@startuml
+title C4 Nivel 3 — Componentes del pod de la API MediTriage (estado real en main)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Enfermera / Médico / Auditor" as User
+node "Ingress nginx\nmeditriage.local (HTTP)" as Ingress
+node "Service ClusterIP\n80 → 8000" as Service
+
+node "Pod meditriage-api · 2-5 réplicas\nUID 65532 · distroless · readOnlyRootFilesystem" as Pod {
+
+  [FastAPI app\nmain.py:app] as App
+
+  package "Middleware y manejo de errores" {
+    [security_headers\nX-Content-Type-Options, CORP,\nCache-Control: no-store] as Headers
+    [_problem_handler\nRFC 7807 + trace_id] as ProblemH
+    [_validation_handler\n400 con detalle] as ValidH
+  }
+
+  package "Seguridad" {
+    [require_auth\nBearer stub\nAUTH_ENABLED] as Auth
+  }
+
+  package "Dominio (lógica pura)" {
+    [classify_esi\nrules-v0\nESI 1-5 + justificación] as Rules
+    [normalize_rut / is_valid_rut\ncompute_dv / mask_rut] as Rut
+  }
+
+  package "Persistencia en memoria" {
+    [STORE\npacientes, evaluaciones,\naudit, idempotency] as Store
+    [LOCK\nthreading.Lock] as Lock
+  }
+
+  [Modelos Pydantic\nPatientIn, TriageIn,\nVitalSigns, TriageUpdateIn] as Models
+}
+
+node "ConfigMap\nAPP_ENV, LOG_LEVEL" as Cfg
+node "Secret opcional\nmeditriage-secrets" as Sec
+node "Probes HTTP\n/health" as Probe
+
+User --> Ingress : HTTPS/HTTP
+Ingress --> Service : puerto 80
+Service --> App : puerto 8000
+App --> Headers
+App --> ProblemH
+App --> ValidH
+App --> Auth
+App --> Models
+App --> Store
+App --> Lock
+Auth ..> Store : (stub) solo valida formato
+Models --> Rules : síntomas + vitales (sin PII)
+Rules --> Store : categoría + justificación
+Rut ..> Models : validación de RUT
+Rut ..> Headers : RUT enmascarado en logs
+Cfg --> App : envFrom
+Sec --> App : envFrom (optional)
+Probe --> App : readiness / liveness
+
+note right of Rules
+  No hay LLM ni worker de IA.
+  Ver ADR 0007 y model-card.md.
+end note
+
+note bottom of Store
+  No persiste: se pierde al reiniciar.
+  Ver post-mortem y ADR 0008.
+end note
+
+@enduml
