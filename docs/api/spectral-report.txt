@@ -1,10 +1,9 @@
+Spectral CLI 6 - api/openapi.yaml
+Ejecutado: 2026-11-26
+Comando: npx --yes @stoplight/spectral-cli@6 lint api/openapi.yaml -r .spectral.yaml
 
-[4mc:/Users/crist/OneDrive/Documentos/GitHub/equipo-XX-meditriage/api/openapi.yaml[24m
-  22:10  [33mwarning[39m  operation-tags  Operation must have non-empty "tags" array.  paths./patients.post
-  96:10  [33mwarning[39m  operation-tags  Operation must have non-empty "tags" array.  paths./triage-evaluations.post
- 183:11  [33mwarning[39m  operation-tags  Operation must have non-empty "tags" array.  paths./triage-evaluations/{id}.patch
-  244:9  [33mwarning[39m  operation-tags  Operation must have non-empty "tags" array.  paths./triage-board.get
-  270:9  [33mwarning[39m  operation-tags  Operation must have non-empty "tags" array.  paths./audit-logs.get
+Resultado: 0 errores, 0 warnings, 0 infos, 0 hints.
+Salida textual: "No results with a severity of 'error' found!"
 
-[33m[1m✖ 5 problems (0 errors, 5 warnings, 0 infos, 0 hints)[22m[39m
-[33m[1m[22m[39m
+Nota: se aplicó tools/add_openapi_tags.py (5 operaciones con tags) antes de ejecutar
+el lint. Los 5 warnings "operation-tags" del reporte anterior quedaron resueltos.

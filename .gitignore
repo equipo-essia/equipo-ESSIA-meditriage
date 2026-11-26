@@ -7,3 +7,7 @@ __pycache__/
 .coverage
 htmlcov/
 .pytest_cache/
+.venv-demo/
+wheels/
+demo-*.log
+demo-*.err

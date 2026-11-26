@@ -17,6 +17,14 @@ servers:
 security:
   - BearerAuth: []
 
+tags:
+  - name: Pacientes
+    description: Registro y consentimiento
+  - name: Triage
+    description: Sugerencia ESI, confirmación y tablero
+  - name: Auditoria
+    description: Registro de decisiones
+
 paths:
   /patients:
     post:
@@ -27,6 +35,8 @@ paths:
         Historia Must Have según priorización MoSCoW — obligatoria por
         la Ley 19.628 para procesar datos sensibles de salud.
       operationId: registerPatient
+      tags:
+        - Pacientes
       security:
         - BearerAuth: []
       parameters:
@@ -101,6 +111,8 @@ paths:
         (mapea Historias 1 y 2: Sugerencia ESI automatizada y
         Justificación clínica explicable).
       operationId: createTriageEvaluation
+      tags:
+        - Triage
       security:
         - BearerAuth: []
       parameters:
@@ -191,6 +203,8 @@ paths:
         ADR 0002 (NFR de Martín G.: SLA 99.5% + fallback si el motor de
         IA falla).
       operationId: updateTriageEvaluation
+      tags:
+        - Triage
       security:
         - BearerAuth: []
       parameters:
@@ -248,6 +262,8 @@ paths:
         (mapea Historia 4, tablero dinámico del médico jefe). Historia
         Must Have según priorización MoSCoW.
       operationId: getTriageBoard
+      tags:
+        - Triage
       security:
         - BearerAuth: []
       responses:
@@ -274,6 +290,8 @@ paths:
         fines de trazabilidad (mapea Historia 5, retención de 5 años).
         Historia Must Have — crítica para cumplir la Ley 21.719.
       operationId: getAuditLogs
+      tags:
+        - Auditoria
       security:
         - BearerAuth: []
       parameters:

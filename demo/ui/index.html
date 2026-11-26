@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MediTriage – Tablero de triage</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--tx:#1b2430;--mu:#5d6b7c;--bd:#dde3ea;--ac:#0b6e99}
+@media(prefers-color-scheme:dark){:root{--bg:#10161d;--card:#18212b;--tx:#e8edf2;--mu:#93a1b1;--bd:#2a3644;--ac:#4fb3dd}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--tx)}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 22px;background:var(--card);border-bottom:1px solid var(--bd)}
+h1{font-size:18px;margin:0}h1 small{color:var(--mu);font-weight:400;margin-left:8px}
+.pill{padding:3px 10px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}.ok{color:#1a9d5a}.bad{color:#d33}
+main{display:grid;grid-template-columns:minmax(320px,420px) 1fr;gap:16px;padding:16px 22px;max-width:1200px;margin:auto}
+@media(max-width:800px){main{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+h2{font-size:14px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu)}
+label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{padding:9px 14px;border:0;border-radius:8px;background:var(--ac);color:#fff;font:inherit;font-weight:600;cursor:pointer;margin-top:12px}
+button.s{background:transparent;color:var(--ac);border:1px solid var(--ac)}button:disabled{opacity:.4;cursor:not-allowed}
+.steps{display:flex;gap:6px;margin-bottom:12px}.steps span{flex:1;text-align:center;font-size:12px;padding:5px;border-radius:6px;background:var(--bg);color:var(--mu)}
+.steps .on{background:var(--ac);color:#fff}.steps .done{color:#1a9d5a;font-weight:600}
+.card{display:flex;gap:12px;border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px;border-left-width:6px}
+.esi{min-width:46px;text-align:center;font-weight:800;font-size:22px}.esi small{display:block;font-size:10px;font-weight:500;color:var(--mu)}
+.e1{border-left-color:#d32f2f}.e2{border-left-color:#f57c00}.e3{border-left-color:#fbc02d}.e4{border-left-color:#388e3c}.e5{border-left-color:#1976d2}
+.meta{font-size:12px;color:var(--mu)}.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--bd);margin-left:6px}
+.warn{background:#fff4e0;color:#7a4a00;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:10px}
+.log{font-size:13px;border-left:2px solid var(--bd);padding:0 0 10px 12px;margin-left:4px}.log b{color:var(--ac)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#b3261e;color:#fff;padding:10px 16px;border-radius:8px;display:none;max-width:90%}
+.empty{color:var(--mu);font-size:13px}
+</style></head><body>
+<header><h1>MediTriage<small>Apoyo a triage ESI · la enfermera decide</small></h1>
+<span id="conn" class="pill">conectando…</span></header>
+<main>
+<div>
+ <section><h2>Flujo</h2>
+  <div class="steps"><span id="s1" class="on">1 Registro</span><span id="s2">2 Sugerencia</span><span id="s3">3 Confirmación</span></div>
+  <button class="s" onclick="demo()" style="margin:0 0 4px">Cargar caso demo</button></section>
+ <section><h2>1 · Paciente</h2>
+  <label>RUT</label><input id="rut" placeholder="12.345.678-5">
+  <label>Nombre completo</label><input id="name">
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="cons" style="width:auto"> Consentimiento informado otorgado</label>
+  <button id="b1" onclick="reg()">Registrar paciente</button><div id="pinfo" class="meta"></div></section>
+ <section><h2>2 · Evaluación</h2>
+  <label>Síntomas (separados por coma)</label><input id="sym" placeholder="dolor torácico">
+  <div class="row"><div><label>Frecuencia cardíaca (lpm)</label><input id="hr" type="number"></div>
+  <div><label>Saturación O₂ (%)</label><input id="sp" type="number"></div></div>
+  <button id="b2" onclick="evalu()" disabled>Obtener sugerencia ESI</button></section>
+ <section><h2>3 · Decisión de la enfermera</h2>
+  <div id="sug" class="empty">Aún no hay sugerencia.</div>
+  <button id="b3" onclick="conf()" disabled>Confirmar sugerencia</button>
+  <div class="row"><select id="man"><option value="">Corregir manualmente…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+  <button id="b4" class="s" onclick="manual()" disabled style="margin:0">Asignar ESI</button></div></section>
+</div>
+<div>
+ <section><h2>Tablero priorizado (ESI 1 = más urgente) <button class="s" style="float:right;margin:-6px 0 0;padding:4px 10px" onclick="load()">Actualizar</button></h2><div id="board"></div></section>
+ <section><h2>Auditoría</h2><div id="audit"></div></section>
+</div></main><div id="toast"></div>
+<script>
+const $=i=>document.getElementById(i);let P=null,E=null;
+const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c=='x'?r:r&3|8).toString(16)});
+async function api(path,method='GET',body){
+ const h={Authorization:'Bearer demo-token'};
+ if(method!='GET'){h['Content-Type']='application/json';h['Idempotency-Key']=uid()}
+ const r=await fetch('/api'+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
+ const t=await r.text();let j={};try{j=JSON.parse(t)}catch(e){}
+ if(!r.ok)throw new Error((j.title||'Error '+r.status)+(j.detail?': '+(typeof j.detail=='string'?j.detail:JSON.stringify(j.detail)):''));
+ return j}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',5000)}
+function step(n){['s1','s2','s3'].forEach((s,i)=>{$(s).className=i+1<n?'done':i+1==n?'on':''})}
+function demo(){$('rut').value='12.345.678-5';$('name').value='Paciente Demo';$('cons').checked=true;$('sym').value='dolor torácico';$('hr').value=120;$('sp').value=92}
+async function reg(){try{
+ P=await api('/patients','POST',{rut:$('rut').value,fullName:$('name').value,consentGiven:$('cons').checked,vitalSigns:{heartRate:+$('hr').value||85,oxygenSaturationPercentage:+$('sp').value||96}});
+ $('pinfo').textContent='Paciente registrado · id '+P.id;$('b2').disabled=false;step(2);load()}catch(e){toast(e.message)}}
+async function evalu(){try{
+ E=await api('/triage-evaluations','POST',{patientId:P.id,symptoms:$('sym').value.split(',').map(s=>s.trim()).filter(Boolean),vitalSigns:{heartRate:+$('hr').value,oxygenSaturationPercentage:+$('sp').value}});
+ $('sug').innerHTML='<b>ESI '+E.esiCategory+' sugerido</b> (motor rules-v0)<div class="meta">'+E.justification+'</div><div class="warn">Es una sugerencia de apoyo: requiere confirmación de la enfermera.</div>';
+ $('b3').disabled=$('b4').disabled=false;step(3);load()}catch(e){toast(e.message)}}
+async function upd(b){try{await api('/triage-evaluations/'+E.id,'PATCH',b);$('b3').disabled=$('b4').disabled=true;$('b2').disabled=true;
+ $('sug').innerHTML+='<div class="tag">Decisión registrada</div>';step(4);load()}catch(e){toast(e.message)}}
+const conf=()=>upd({confirmedByNurse:true});
+function manual(){const v=+$('man').value;if(!v)return toast('Elige una categoría ESI');upd({manualEsiCategory:v})}
+const LBL={ai_suggested:'sugerida por IA',confirmed:'confirmada',manual_fallback:'asignada manualmente'};
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function load(){try{
+ const[b,a]=await Promise.all([api('/triage-board'),api('/audit-logs')]);
+ $('board').innerHTML=b.length?b.map(e=>`<div class="card e${e.esiCategory}"><div class="esi">${e.esiCategory}<small>ESI</small></div><div><b>${esc(e.id)}</b><span class="tag">${LBL[e.status]||esc(e.status)}</span>${e.confirmedByNurse?'<span class="tag">✓ enfermera</span>':''}<div class="meta">${esc(e.justification||'')}</div></div></div>`).join(''):'<div class="empty">Sin evaluaciones todavía.</div>';
+ $('audit').innerHTML=a.length?a.map(x=>`<div class="log"><b>${esc(x.evaluationId)}</b> · ESI ${x.esiCategory} · ${new Date(x.timestamp).toLocaleTimeString()}<div class="meta">${esc(x.justification)}</div></div>`).join(''):'<div class="empty">Sin eventos.</div>'}catch(e){}}
+async function ping(){try{await api('/health');$('conn').textContent='● API conectada';$('conn').className='pill ok'}catch(e){$('conn').textContent='● API sin conexión';$('conn').className='pill bad'}}
+ping();load();setInterval(ping,8000);
+</script></body></html>

@@ -18,12 +18,15 @@ Falco DaemonSet -> Falcosidekick -> Alertmanager/Slack/email -> guardia
 
 ## 3. Reglas y enrutamiento
 
-| Regla | Prioridad | Qué detecta | Canal | Acción inicial |
+Las prioridades son las declaradas en `falco/rules-custom.yaml` (no se han inventado
+ni suavizado valores):
+
+| Regla (`falco/rules-custom.yaml`) | Prioridad | Qué detecta | Canal | Acción inicial |
 |---|---|---|---|---|
-| Shell en contenedor | Warning/Critical | `bash`, `sh`, `ash` dentro de un pod | #meditriage-security + email | Aislar pod, revisar proceso, recolectar logs |
-| Escritura bajo `/etc` | Warning | Modificación de configuración del contenedor | #meditriage-security | Comparar con imagen, revisar drift, recrear pod |
-| Conexión saliente inesperada | Notice/Warning | Conexión a IP/dominio no allowlisted | #meditriage-security | Ver destino, revisar DNS, bloquear si es malicioso |
-| Lectura de archivo sensible (opcional) | Warning | Acceso a `/etc/shadow`, secretos, tokens | #meditriage-security + ticket | Rotar credenciales, revisar alcance |
+| Shell interactivo en pod de MediTriage | CRITICAL | `sh`, `bash`, `ash`, `dash`, `zsh` con TTY dentro de un pod | #meditriage-security + email | Aislar pod, revisar proceso, recolectar logs |
+| Escritura en `/etc` o `/app` en pod de MediTriage | ERROR | Escritura en rutas protegidas del contenedor | #meditriage-security | Comparar con imagen, revisar drift, recrear pod |
+| Conexión saliente inesperada desde pod de MediTriage | ERROR | Conexión a una red no incluida en los rangos privados permitidos | #meditriage-security | Ver destino, revisar DNS, bloquear si es malicioso |
+| Lectura de archivo sensible | No implementada | Regla opcional, aún no existe en `falco/rules-custom.yaml` | — | Si se implementa: rotar credenciales y revisar alcance |
 
 ## 4. Formato de la alerta
 
