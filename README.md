@@ -43,6 +43,11 @@ Para correr la misma demo contra la API desplegada en Kubernetes, abre un túnel
 visual de demo está en [`demo/ui/`](demo/ui/); no es la SPA diseñada en el C4,
 que sigue como diseño.
 
+**Alternativa portable de un clic:** doble clic en `start_demo.bat` (Windows) o
+`./start_demo.sh` (macOS/Linux). Instala desde `wheels/` sin internet, elige puerto
+libre si el 8000 está ocupado y abre `http://localhost:8000/demo` con un panel de
+dos pasos (datos del paciente → demo en vivo). Detalles en [`DEMO_PORTABLE.md`](DEMO_PORTABLE.md).
+
 Salida esperada: `health ok`, paciente `201`, sugerencia `202` con ESI 2 y
 justificación con la razón y la confirmación enfermera, `200` con
 `status: confirmed`, tablero ordenado por ESI y **2** eventos de auditoría
@@ -178,6 +183,7 @@ Detalle en [`k8s/README.md`](k8s/README.md) y [ADR 0008](docs/adr/0008-resilienc
 
 - **112 tests**, **99,16 % de cobertura** de `main.py` (`pytest --cov=main`), incluidos los tests de contrato contra `api/openapi.yaml` (`tests/test_contract.py`).
 - `ruff check .` sin errores.
+- `docs/api/spectral-report.txt`: 0 errores y 0 warnings tras agregar `tags` a las 5 operaciones.
 - Contrato OpenAPI 3.1 con errores RFC 7807 y `trace_id`.
 - Idempotencia por `Idempotency-Key` en los tres endpoints de escritura.
 - Reporte histórico de Spectral: 5 warnings de `operation-tags` (0 errores) en

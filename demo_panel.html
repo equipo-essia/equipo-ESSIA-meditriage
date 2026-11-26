@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MediTriage · Demo S18</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a30; --panel2:#18233f; --line:#263456;
+    --text:#e8eefc; --muted:#93a4c8; --cyan:#37d6d0; --green:#42d392;
+    --orange:#f9a03f; --red:#ef5f6b; --blue:#5b9cff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,#16224a 0%,var(--bg) 55%);
+       color:var(--text);font-family:"Segoe UI",Inter,system-ui,-apple-system,sans-serif;min-height:100vh}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:18px 32px;border-bottom:1px solid var(--line);background:rgba(11,16,32,.85);
+    backdrop-filter:blur(8px);position:sticky;top:0;z-index:10}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:800;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));color:#06101f;font-size:19px}
+  .brand h1{font-size:19px;margin:0;letter-spacing:.2px}
+  .brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:1.4px;text-transform:uppercase}
+  .live{display:flex;align-items:center;gap:8px;color:var(--green);font-size:13px;font-weight:600}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px rgba(66,211,146,.14)}
+  main{padding:24px 32px 48px;max-width:1500px;margin:0 auto}
+  h2{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .sec-label{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .sec-label .n{width:28px;height:28px;border-radius:8px;background:var(--cyan);color:#06101f;
+    display:grid;place-items:center;font-weight:900;font-size:13px}
+  .sec-label h2{margin:0}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g5{grid-template-columns:repeat(5,1fr)}
+  .card{background:linear-gradient(180deg,var(--panel),#0f1629);border:1px solid var(--line);
+    border-radius:14px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .card h3{margin:0 0 14px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px;
+    margin:0 0 5px;font-weight:600}
+  input[type=text],input[type=number]{width:100%;background:#0a1123;border:1px solid var(--line);
+    color:var(--text);border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;
+    transition:.15s;outline:none}
+  input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(55,214,208,.12)}
+  .field{margin-bottom:13px}
+  .consent{display:flex;align-items:flex-start;gap:10px;background:#0a1123;border:1px solid var(--line);
+    border-radius:9px;padding:12px;cursor:pointer;margin-top:4px}
+  .consent input{width:17px;height:17px;accent-color:var(--cyan);margin-top:1px;flex:0 0 auto}
+  .consent span{font-size:13px;line-height:1.45;color:#cbd8f5}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chip{background:#1b2949;border:1px solid #2b3d68;color:#bcd0f5;border-radius:999px;
+    padding:4px 10px;font-size:11px;cursor:pointer;user-select:none}
+  .chip.on{background:rgba(55,214,208,.16);border-color:var(--cyan);color:var(--cyan)}
+  .btn{background:var(--cyan);color:#06101f;border:0;border-radius:9px;padding:12px 20px;
+    font-weight:800;font-size:14px;cursor:pointer;transition:.15s}
+  .btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+  .badge{display:inline-block;padding:5px 11px;border-radius:999px;font-size:11px;font-weight:800;
+    letter-spacing:.6px;text-transform:uppercase}
+  .b-ok{background:rgba(66,211,146,.15);color:var(--green);border:1px solid rgba(66,211,146,.35)}
+  .b-design{background:rgba(91,156,255,.13);color:var(--blue);border:1px solid rgba(91,156,255,.35)}
+  .b-warn{background:rgba(249,160,63,.13);color:var(--orange);border:1px solid rgba(249,160,63,.35)}
+  .step{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);
+    border-radius:11px;margin-bottom:9px;background:#0e152a;transition:.25s;opacity:.55}
+  .step.done{opacity:1;border-color:rgba(66,211,146,.5);background:rgba(66,211,146,.07)}
+  .step.active{opacity:1;border-color:var(--cyan);box-shadow:0 0 0 2px rgba(55,214,208,.15)}
+  .num{width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:grid;place-items:center;
+    background:var(--panel2);color:var(--muted);font-size:12px;font-weight:800}
+  .step.done .num{background:var(--green);color:#06101f}
+  .step.active .num{background:var(--cyan);color:#06101f}
+  .step b{display:block;font-size:14px}
+  .step span{color:var(--muted);font-size:12px}
+  pre{margin:8px 0 0;white-space:pre-wrap;word-break:break-word;font:12px/1.5 Consolas,monospace;
+    color:#bcd0f5;background:#080d1c;border:1px solid #1c2947;border-radius:8px;padding:10px;
+    max-height:150px;overflow:auto}
+  .esi{font-size:64px;font-weight:900;line-height:1;letter-spacing:-3px}
+  .esi-wrap{display:flex;align-items:center;gap:18px}
+  .esi-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+  .just{font-size:14px;line-height:1.6;color:#d8e4ff;background:#0a1123;border-left:3px solid var(--orange);
+    padding:12px 14px;border-radius:0 8px 8px 0;margin-top:12px}
+  .timeline{border-left:2px solid var(--line);margin-left:8px;padding-left:18px}
+  .ev{position:relative;margin-bottom:14px;font-size:13px}
+  .ev:before{content:"";position:absolute;left:-24px;top:5px;width:9px;height:9px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 0 4px rgba(55,214,208,.12)}
+  .ev small{display:block;color:var(--muted);font:11px Consolas,monospace;margin-top:2px}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #1c2947;font-size:13px}
+  .kv:last-child{border:0}
+  .kv span:first-child{color:var(--muted)}
+  .kv b{color:var(--text)}
+  .tag{display:inline-block;background:#1b2949;color:#bcd0f5;border:1px solid #2b3d68;
+    border-radius:7px;padding:5px 9px;font-size:11px;margin:3px 4px 3px 0;font-family:Consolas,monospace}
+  .metric{text-align:center;padding:16px 8px}
+  .metric .n{font-size:30px;font-weight:900;color:var(--cyan);line-height:1.1}
+  .metric .l{color:var(--muted);font-size:11px;margin-top:6px;text-transform:uppercase;letter-spacing:.8px}
+  .callout{border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.55;margin-top:12px}
+  .callout.info{background:rgba(91,156,255,.09);border:1px solid rgba(91,156,255,.32);color:#c7dcff}
+  .callout.good{background:rgba(66,211,146,.08);border:1px solid rgba(66,211,146,.3);color:#b8f2d6}
+  .callout.warn{background:rgba(249,160,63,.09);border:1px solid rgba(249,160,63,.32);color:#ffd9a8}
+  .divider{height:1px;background:var(--line);margin:34px 0 30px}
+  footer{padding:18px 32px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">M</div>
+    <div><h1>MediTriage</h1><small>Defensa final · S18 · Equipo ESSIA</small></div>
+  </div>
+  <div class="live"><span class="dot"></span> API en vivo · <span id="hostLabel">127.0.0.1:8000</span></div>
+</header>
+
+<main>
+
+<!-- ============ SECCIÓN 1: DATOS DEL PACIENTE ============ -->
+<div class="sec-label"><div class="n">1</div><h2>Datos del paciente</h2>
+  <span class="badge b-design" id="conn">Conectando…</span></div>
+<p class="sub">Completa los datos que se enviarán a la API. Luego ejecuta la demo con ese paciente.</p>
+
+<div class="grid g2">
+  <div class="card">
+    <h3>Identificación y consentimiento</h3>
+    <div class="field">
+      <label for="rut">RUT</label>
+      <input id="rut" type="text" value="12.345.678-5" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="name">Nombre completo</label>
+      <input id="name" type="text" value="Paciente Demo">
+    </div>
+    <label class="consent">
+      <input id="consent" type="checkbox" checked>
+      <span>El paciente otorgó su <b>consentimiento informado</b> para el tratamiento de datos sensibles de salud (Ley 19.628 / 21.719). Campo <code>consentGiven</code> en <code>POST /patients</code>.</span>
+    </label>
+    <div class="callout info">El RUT se valida con dígito verificador antes de guardar. En los logs del servidor aparece <b>enmascarado</b> (<code>********5</code>).</div>
+  </div>
+
+  <div class="card">
+    <h3>Signos vitales y síntomas</h3>
+    <div class="grid g2">
+      <div class="field"><label for="hr">Frecuencia cardíaca (lpm)</label><input id="hr" type="number" value="120"></div>
+      <div class="field"><label for="spo2">Saturación O₂ (%)</label><input id="spo2" type="number" value="92"></div>
+      <div class="field"><label for="sys">PAS (sistólica)</label><input id="sys" type="number" placeholder="opcional"></div>
+      <div class="field"><label for="dia">PAD (diastólica)</label><input id="dia" type="number" placeholder="opcional"></div>
+      <div class="field"><label for="temp">Temperatura (°C)</label><input id="temp" type="number" step="0.1" placeholder="opcional"></div>
+    </div>
+    <div class="field">
+      <label for="sym">Síntomas (separados por coma)</label>
+      <input id="sym" type="text" value="dolor torácico">
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="callout good">Con estos valores el motor sugiere <b>ESI 2</b>: desaturación (92 %), síntoma de alto riesgo y taquicardia (120 lpm).</div>
+  </div>
+</div>
+
+<div class="toolbar" style="margin-top:18px">
+  <button class="btn" id="loadRun">▶ Cargar datos y ejecutar demo</button>
+  <span class="badge b-warn" id="formMsg">Esperando datos…</span>
+</div>
+
+<div class="divider"></div>
+
+<!-- ============ SECCIÓN 2: DEMO EN VIVO ============ -->
+<div class="sec-label"><div class="n">2</div><h2>Demo en vivo</h2>
+  <span class="badge b-ok">Flujo end-to-end</span></div>
+<p class="sub">Mismos endpoints del contrato <code>api/openapi.yaml</code>. Sin video pregrabado.</p>
+
+<div class="toolbar">
+  <button class="btn ghost" id="runOnly">↻ Repetir demo con los mismos datos</button>
+  <button class="btn ghost" id="reset">↺ Limpiar pantalla</button>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <h3>Secuencia de peticiones</h3>
+    <div id="steps"></div>
+  </div>
+  <div>
+    <div class="grid g2" style="margin-bottom:16px">
+      <div class="card">
+        <h3>Categoría sugerida</h3>
+        <div class="esi-wrap">
+          <div class="esi" id="esi" style="color:var(--muted)">—</div>
+          <div><div class="esi-label">ESI</div><span class="badge b-warn" id="estado">sin datos</span></div>
+        </div>
+      </div>
+      <div class="card metric"><div class="n" id="lat">—</div><div class="l">Latencia creación→confirmación</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h3>Justificación del motor <span class="badge b-design">rules-v0 · sin LLM</span></h3>
+      <div class="just" id="just">Ejecuta el demo para ver la explicación de la sugerencia.</div>
+    </div>
+    <div class="card">
+      <h3>Registro de auditoría <span class="badge b-ok" id="auditCount">0 eventos</span></h3>
+      <div class="timeline" id="audit"><div class="ev" style="color:var(--muted)">Sin eventos todavía.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h3>Respuestas HTTP <span class="badge b-design">señala la Terminal 1 mientras corren</span></h3>
+  <div class="grid g5" id="httpRow"></div>
+</div>
+
+</main>
+
+<footer>MediTriage · evidencia real de <code>main</code> · 2026-11-23</footer>
+
+<script>
+const LABELS = [
+  ["GET /health", "Probes de Kubernetes"],
+  ["POST /patients", "RUT + consentimiento + idempotencia"],
+  ["POST /triage-evaluations", "rules-v0 sugiere ESI"],
+  ["PATCH /triage-evaluations/{id}", "Enfermera confirma"],
+  ["GET /triage-board + /audit-logs", "Tablero y trazabilidad"]
+];
+const ESI_COLOR = {1:"var(--red)",2:"var(--orange)",3:"#eab308",4:"var(--green)",5:"var(--blue)"};
+const SUGERENCIAS = ["dolor torácico","dificultad para respirar","fiebre","tos","sangrado","convulsión"];
+let state = {done:0,payloads:{},patient:null,evaluation:null,confirmed:null,audit:[]};
+
+const $ = id => document.getElementById(id);
+const uuid = () => crypto.randomUUID ? crypto.randomUUID() :
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16);});
+
+function validRut(value){
+  const n = value.replace(/[.\-\s]/g,'').toUpperCase();
+  if(n.length < 2) return false;
+  const body = n.slice(0,-1), dv = n.slice(-1);
+  if(!/^\d+$/.test(body) || body.length<7 || body.length>8) return false;
+  let total=0, factor=2;
+  for(let i=body.length-1;i>=0;i--){
+    total += parseInt(body[i],10)*factor;
+    factor = factor===7 ? 2 : factor+1;
+  }
+  const r = 11-(total%11);
+  const expected = r===11 ? '0' : (r===10 ? 'K' : String(r));
+  return expected === dv;
+}
+
+function vitalsFromForm(){
+  const v = {};
+  const map = {hr:"heartRate",sys:"bloodPressureSystolic",dia:"bloodPressureDiastolic",
+               temp:"temperatureCelsius",spo2:"oxygenSaturationPercentage"};
+  for(const [id,key] of Object.entries(map)){
+    const raw = $(id).value.trim();
+    if(raw !== "") v[key] = Number(raw);
+  }
+  return v;
+}
+
+function readForm(){
+  if(!validRut($("rut").value)){
+    $("formMsg").textContent = "RUT inválido — revisa el dígito verificador";
+    $("formMsg").className = "badge b-warn";
+    $("rut").focus(); return null;
+  }
+  if(!$("name").value.trim()){
+    $("formMsg").textContent = "Falta el nombre del paciente";
+    $("formMsg").className = "badge b-warn";
+    $("name").focus(); return null;
+  }
+  if(!$("consent").checked){
+    $("formMsg").textContent = "Falta el consentimiento informado";
+    $("formMsg").className = "badge b-warn";
+    return null;
+  }
+  const symptoms = $("sym").value.split(",").map(s=>s.trim()).filter(Boolean);
+  if(symptoms.length === 0){
+    $("formMsg").textContent = "Ingresa al menos un síntoma";
+    $("formMsg").className = "badge b-warn";
+    return null;
+  }
+  $("formMsg").textContent = "Datos listos · RUT " + $("rut").value + " validado";
+  $("formMsg").className = "badge b-ok";
+  return {
+    patient:{rut:$("rut").value.trim(), fullName:$("name").value.trim(),
+             consentGiven:true, vitalSigns:vitalsFromForm()},
+    symptoms
+  };
+}
+
+function renderChips(){
+  const current = $("sym").value.split(",").map(s=>s.trim().toLowerCase());
+  $("chips").innerHTML = SUGERENCIAS.map(s=>
+    `<span class="chip ${current.includes(s)?'on':''}" data-s="${s}">${s}</span>`).join("");
+  $("chips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+    let list = $("sym").value.split(",").map(x=>x.trim()).filter(Boolean);
+    const s = c.dataset.s;
+    if(list.includes(s)) list = list.filter(x=>x!==s); else list.push(s);
+    $("sym").value = list.join(", ");
+    renderChips();
+  });
+}
+
+async function req(method, path, body){
+  const res = await fetch(path,{
+    method,
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer demo-token",
+      "Idempotency-Key":uuid()
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const raw = await res.text();
+  if(!res.ok) throw new Error(`${res.status} ${raw}`);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function renderSteps(){
+  $("steps").innerHTML = LABELS.map((l,i)=>
+    `<div class="step ${state.done>i?'done':(state.done===i?'active':'')}" id="s${i}">
+       <div class="num">${state.done>i?'✓':i}</div>
+       <div><b>${l[0]}</b><span>${l[1]}</span><pre id="p${i}">${state.payloads?.[i]||''}</pre></div>
+     </div>`).join("");
+}
+
+function mark(i, payload){
+  state.done = i+1;
+  state.payloads = state.payloads||{};
+  state.payloads[i] = typeof payload==='string' ? payload : JSON.stringify(payload,null,1);
+  renderSteps();
+  const row = $("httpRow");
+  const codes = [200,201,202,200,200];
+  if(row.children.length < 5) row.innerHTML = LABELS.map((l,i)=>
+    `<div class="card metric"><div class="n" id="h${i}">—</div><div class="l">${l[0].split(' ')[0]}</div></div>`).join("");
+  const h = $("h"+i); if(h){ h.textContent = codes[i]; h.style.color = "var(--green)"; }
+}
+
+function renderResult(){
+  const e = state.evaluation;
+  if(e){
+    $("esi").textContent = e.esiCategory;
+    $("esi").style.color = ESI_COLOR[e.esiCategory];
+    $("just").textContent = e.justification;
+  }
+  if(state.confirmed){
+    $("estado").textContent = state.confirmed.status;
+    $("estado").className = "badge b-ok";
+  }
+  if(state.audit?.length){
+    $("auditCount").textContent = state.audit.length+" eventos";
+    $("audit").innerHTML = state.audit.map(a=>
+      `<div class="ev">${a.justification}<small>${a.timestamp} · ${a.evaluationId}</small></div>`).join("");
+    const t = state.audit.map(a=>new Date(a.timestamp).getTime());
+    if(t.length===2) $("lat").textContent = Math.max(0,t[1]-t[0])+" ms";
+  }
+}
+
+async function run(data){
+  const buttons = [$("loadRun"),$("runOnly")];
+  buttons.forEach(b=>b.disabled=true);
+  state = {done:0,payloads:{},patient:null,evaluation:null,confirmed:null,audit:[]};
+  renderSteps(); renderResult(); $("httpRow").innerHTML="";
+  try{
+    // El servidor demo expone /demo/reset; si se usa uvicorn main:app directamente,
+    // el 404 se ignora y el flujo sigue funcionando igual.
+    try { await req("POST","/demo/reset"); } catch(e) {}
+    const h = await req("GET","/health"); mark(0,h);
+    state.patient = await req("POST","/patients", data.patient); mark(1,state.patient);
+    state.evaluation = await req("POST","/triage-evaluations",{
+      patientId:state.patient.id, symptoms:data.symptoms,
+      vitalSigns:vitalsFromForm()
+    }); mark(2,state.evaluation); renderResult();
+    state.confirmed = await req("PATCH","/triage-evaluations/"+state.evaluation.id,
+      {confirmedByNurse:true}); mark(3,state.confirmed);
+    const board = await req("GET","/triage-board");
+    state.audit = await req("GET","/audit-logs");
+    mark(4,board); renderResult();
+    $("formMsg").textContent = "Demo completada con los datos cargados";
+    $("formMsg").className = "badge b-ok";
+  }catch(err){
+    $("formMsg").textContent = "Error: "+err.message;
+    $("formMsg").className = "badge b-warn";
+  }
+  buttons.forEach(b=>b.disabled=false);
+}
+
+$("loadRun").onclick = () => { const d = readForm(); if(d) run(d); };
+$("runOnly").onclick = () => { const d = readForm(); if(d) run(d); };
+$("reset").onclick = () => {
+  try { req("POST","/demo/reset").catch(()=>{}); } catch(e) {}
+  state={done:0,payloads:{},patient:null,evaluation:null,confirmed:null,audit:[]};
+  $("httpRow").innerHTML=""; $("esi").textContent="—"; $("esi").style.color="var(--muted)";
+  $("just").textContent="Ejecuta el demo para ver la explicación de la sugerencia.";
+  $("estado").textContent="sin datos"; $("estado").className="badge b-warn";
+  $("lat").textContent="—"; $("auditCount").textContent="0 eventos";
+  $("audit").innerHTML='<div class="ev" style="color:var(--muted)">Sin eventos todavía.</div>';
+  $("formMsg").textContent="Datos listos · RUT " + $("rut").value + " validado";
+  $("formMsg").className="badge b-ok";
+  renderSteps();
+};
+["rut","name","sym"].forEach(id=>$(id).addEventListener("input",()=>{
+  $("formMsg").textContent="Datos modificados · vuelve a cargar";
+  $("formMsg").className="badge b-warn";
+  if(id==="sym") renderChips();
+}));
+
+$("hostLabel").textContent = location.host || "127.0.0.1:8000";
+renderChips(); renderSteps();
+req("GET","/health").then(()=>{$("conn").textContent="API conectada";$("conn").className="badge b-ok";})
+  .catch(()=>{$("conn").textContent="API no disponible";$("conn").className="badge b-warn";});
+</script>
+</body>
+</html>

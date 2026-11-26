@@ -2,7 +2,9 @@
 Uso:  python ui_server.py            (API en http://127.0.0.1:8080 por defecto)
       $env:API_URL="http://127.0.0.1:8000"; python ui_server.py
 Luego abre http://127.0.0.1:9000"""
-import os, urllib.request, urllib.error
+import os
+import urllib.error
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 API = os.environ.get("API_URL", "http://127.0.0.1:8080").rstrip("/")

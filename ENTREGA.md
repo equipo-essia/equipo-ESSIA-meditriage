@@ -26,6 +26,12 @@ python demo/demo.py
 **Interfaz de demo** (no es la SPA diseñada en el C4): `cd demo/ui`, luego
 `$env:API_URL = "http://127.0.0.1:8000"; python ui_server.py` y abrir http://127.0.0.1:9000.
 
+**Opción portable de un clic:** en la raíz están `start_demo.bat` / `start_demo.sh`,
+`demo_server.py`, `demo_panel.html`, `DEMO_PORTABLE.md` y `wheels/`. Copiar toda la
+carpeta a otra PC, doble clic en `start_demo.bat` (Windows) o `./start_demo.sh`
+(macOS/Linux). Instala sin internet desde `wheels/`, elige puerto libre si el 8000
+está ocupado y abre `http://localhost:8000/demo`. Usa la misma API `main.py`.
+
 ### Evidencia capturada (ejecución **local**, API en `127.0.0.1:8000`, sin Kubernetes)
 
 | Captura | Qué muestra |
@@ -49,13 +55,13 @@ python demo/demo.py
 
 | Criterio (pts) | Evidencia | Estado / limitación declarada |
 |---|---|---|
-| Demo end-to-end (15) | `README.md` §1, `demo/demo.py`, `demo/ui/`, capturas `docs/img/demo-*.png`, `k8s/`, `docs/img/kubectl-get-all.png`, `docs/img/hpa-scale-up.png` | La demo se ejecutó en local. El despliegue en Kubernetes está evidenciado con las capturas previas del repositorio. La API guarda el estado en memoria y con varias réplicas no se comparte (`docs/operacion/post-mortem.md`) |
-| Arquitectura y ADRs (15) | `docs/adr/0001` a `0008`, `docs/c4/` (L1 y L2 con PNG, L3 en `.puml`), `api/openapi.yaml`, `docs/data/`, `docs/arch/` | L1 y L2 describen el diseño objetivo; L3 describe el estado real. Pendiente: Agregar la sección de alternativas en el ADR 0003 |
+| Demo end-to-end (15) | `README.md` §1, `demo/demo.py`, `demo/ui/`, `start_demo.bat` / `DEMO_PORTABLE.md`, capturas `docs/img/demo-*.png`, `k8s/`, `docs/img/kubectl-get-all.png`, `docs/img/hpa-scale-up.png` | La demo se ejecutó en local. El despliegue en Kubernetes está evidenciado con las capturas previas del repositorio. La API guarda el estado en memoria y con varias réplicas no se comparte (`docs/operacion/post-mortem.md`) |
+| Arquitectura y ADRs (15) | `docs/adr/0001` a `0008`, `docs/c4/` (L1, L2 y L3 con PNG y `.puml`), `api/openapi.yaml`, `docs/data/`, `docs/arch/`, `docs/api/spectral-report.txt` | L1 y L2 describen el diseño objetivo; L3 describe el estado real. ADR 0001 ya incluye alternativas; sigue pendiente la sección de alternativas del ADR 0003 |
 | DevSecOps (12) | `.github/workflows/ci.yml` (build, Cosign, SLSA), `scans.yml` (Checkov, Trivy, ZAP), `security.yml` (Semgrep, SBOM), `k8s/policies/require-signature.yaml`, `falco/rules-custom.yaml`, `docs/img/s10-*.png`, `docs/adr/0006-supply-chain.md` | SLSA nivel 2 con salvedad. Hay 2 excepciones temporales de Kyverno con fecha límite 2026-12-09 |
 | IA responsable (12) | `docs/ia/` (golden set, `evaluate.py`, informe de evaluación, model card), `docs/adr/0007-ia-responsable.md`, `docs/threat-model.md` | Motor determinista `rules-v0`, sin LLM. Sin validación clínica ni análisis de fairness |
 | Resiliencia y DR (10) | `docs/operacion/` (SLOs, runbook, post-mortem, game day), `k8s/hpa.yaml`, `k8s/deployment.yaml` | El game day fue un ejercicio de mesa: no se ejecutó en clúster y no hay mediciones. Los SLOs son objetivos sin instrumentar. Los datos se pierden al reiniciar (estado en memoria) |
 | FinOps (8) | `docs/finops/costo.md`, `docs/adr/0008-resiliencia-finops.md` | El costo es una estimación, no una factura. Pendiente: medir en CI la palanca de caché de capas (run sin caché frente a run con caché) |
-| Calidad y tests (8) | `tests/test_api.py`, `tests/test_unit.py`, `tests/test_contract.py`, `pytest.ini`, `ruff.toml`, `.spectral.yaml`, `docs/api/spectral-report.txt` | 112 tests pasan en local (Python 3.11.9) con 99,16 % de cobertura de `main.py` (sin cubrir: líneas 490-492); el CI debe confirmarlo. El reporte de Spectral conserva 5 warnings de `operation-tags` salvo que se aplique `tools/add_openapi_tags.py` y se verifique |
+| Calidad y tests (8) | `tests/test_api.py`, `tests/test_unit.py`, `tests/test_contract.py`, `pytest.ini`, `ruff.toml`, `.spectral.yaml`, `docs/api/spectral-report.txt`, `tools/add_openapi_tags.py` | 112 tests y 99,16 % de cobertura medidos en local (Python 3.11.9); falta confirmarlo en CI. `ruff check .` sin errores y `docs/api/spectral-report.txt` con 0 errores y 0 warnings tras aplicar los `tags` |
 | Q&A (10) | `docs/seguridad/preguntas-panel.md` | — |
 | Trabajo en equipo (5) | `CHARTER.md`, `docs/backlog.md`, historial de commits y pull requests | — |
 | Presentación y tiempo (5) | Sin defensa en vivo; este archivo y el `README.md` cumplen esa función | — |
@@ -79,9 +85,14 @@ Surgen de comparar `api/openapi.yaml` con `main.py`. Conviene corregirlas o acep
 
 ## 5. Pendientes declarados
 
-1. Cifras reales de tests y cobertura, tomadas del CI, en `README.md` §7.
-2. PNG del C4 nivel 3 (`docs/c4/l3-component.png`) y enlace en `docs/c4/README.md`.
-3. Sección "Alternativas consideradas" en los ADR 0001 y 0003.
-4. Medición de la palanca de FinOps en CI y registro de los segundos en `docs/finops/costo.md`.
-5. Game day en clúster con mediciones reales (hoy solo ejercicio de mesa).
-6. Verificación con Spectral tras agregar los `tags` al contrato.
+1. Confirmar en CI las cifras ya medidas en local (**112 tests, 99,16 % de cobertura**) y reflejarlas en `README.md` §7.
+2. Sección «Alternativas consideradas» en el **ADR 0003** (el ADR 0001 ya la incluye).
+3. Medición de la palanca de FinOps en CI y registro de los segundos en `docs/finops/costo.md`.
+4. Game day en clúster con mediciones reales (hoy solo ejercicio de mesa).
+
+### Cerrados en esta entrega
+
+- PNG del C4 nivel 3 (`docs/c4/l3-component.png`) y enlace en `docs/c4/README.md`.
+- `tags` de las 5 operaciones del contrato y verificación con Spectral: `docs/api/spectral-report.txt` con **0 errores y 0 warnings**.
+- Alternativas consideradas en el ADR 0001.
+- Errores de `ruff` corregidos en `demo/ui/ui_server.py`, `docs/ia/evaluate.py` y `demo_s18.py`.

@@ -51,7 +51,7 @@ def run() -> dict:
     total = len(results)
     passed = sum(r["ok"] for r in results)
     by_level = Counter()
-    for case, result in zip(data["cases"], results):
+    for case, result in zip(data["cases"], results, strict=True):
         if case["kind"] == "category" and result["ok"]:
             by_level[case["expected_esi"]] += 1
 
