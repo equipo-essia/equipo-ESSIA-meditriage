@@ -176,7 +176,7 @@ Detalle en [`k8s/README.md`](k8s/README.md) y [ADR 0008](docs/adr/0008-resilienc
 
 ## 7. Calidad
 
-- **104 tests**, **99,16 % de cobertura** de `main.py` (`pytest --cov=main`).
+- **112 tests**, **99,16 % de cobertura** de `main.py` (`pytest --cov=main`), incluidos los tests de contrato contra `api/openapi.yaml` (`tests/test_contract.py`).
 - `ruff check .` sin errores.
 - Contrato OpenAPI 3.1 con errores RFC 7807 y `trace_id`.
 - Idempotencia por `Idempotency-Key` en los tres endpoints de escritura.
