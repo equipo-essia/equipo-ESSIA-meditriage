@@ -33,12 +33,14 @@ app = meditriage.app
 _PANEL = Path(__file__).with_name("demo_panel.html")
 
 
-@app.get("/demo", response_class=HTMLResponse, include_in_schema=False)
+# Endpoint operativo de la demo: sin autenticación por diseño, excluido por la regla
+# fastapi-endpoint-missing-auth mediante tags=["ops"] (no forma parte del contrato).
+@app.get("/demo", response_class=HTMLResponse, include_in_schema=False, tags=["ops"])
 def demo_panel() -> HTMLResponse:
     return HTMLResponse(_PANEL.read_text(encoding="utf-8"))
 
 
-@app.post("/demo/reset", include_in_schema=False)
+@app.post("/demo/reset", include_in_schema=False, tags=["ops"])
 def demo_reset() -> dict[str, object]:
     """Limpia el STORE en memoria para que cada demo empiece con 2 eventos de auditoría.
 

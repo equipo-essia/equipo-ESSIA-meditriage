@@ -12,5 +12,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py demo_server.py demo_panel.html ./
 
+# La demo no escribe en disco; ejecutarla como usuario no root cierra el hallazgo
+# dockerfile.security.missing-user.missing-user del SAST.
+RUN useradd --create-home --uid 10001 demo
+USER demo
+
 EXPOSE 8000
 CMD ["python", "demo_server.py", "--host", "0.0.0.0", "--port", "8000"]
