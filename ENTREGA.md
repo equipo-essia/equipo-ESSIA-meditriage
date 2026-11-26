@@ -61,7 +61,7 @@ está ocupado y abre `http://localhost:8000/demo`. Usa la misma API `main.py`.
 | IA responsable (12) | `docs/ia/` (golden set, `evaluate.py`, informe de evaluación, model card), `docs/adr/0007-ia-responsable.md`, `docs/threat-model.md` | Motor determinista `rules-v0`, sin LLM. Sin validación clínica ni análisis de fairness |
 | Resiliencia y DR (10) | `docs/operacion/` (SLOs, runbook, post-mortem, game day), `k8s/hpa.yaml`, `k8s/deployment.yaml` | El game day fue un ejercicio de mesa: no se ejecutó en clúster y no hay mediciones. Los SLOs son objetivos sin instrumentar. Los datos se pierden al reiniciar (estado en memoria) |
 | FinOps (8) | `docs/finops/costo.md`, `docs/adr/0008-resiliencia-finops.md` | El costo es una estimación, no una factura. Pendiente: medir en CI la palanca de caché de capas (run sin caché frente a run con caché) |
-| Calidad y tests (8) | `tests/test_api.py`, `tests/test_unit.py`, `tests/test_contract.py`, `pytest.ini`, `ruff.toml`, `.spectral.yaml`, `docs/api/spectral-report.txt`, `tools/add_openapi_tags.py` | 112 tests y 99,16 % de cobertura medidos en local (Python 3.11.9); falta confirmarlo en CI. `ruff check .` sin errores y `docs/api/spectral-report.txt` con 0 errores y 0 warnings tras aplicar los `tags` |
+| Calidad y tests (8) | `tests/test_api.py`, `tests/test_unit.py`, `tests/test_contract.py`, `pytest.ini`, `ruff.toml`, `.spectral.yaml`, `docs/api/spectral-report.txt`, `tools/add_openapi_tags.py` | 112 tests y 99,16 % de cobertura medidos en local (Python 3.11.9); falta confirmarlo en CI. `ruff check .` y `ruff format --check .` sin errores y `docs/api/spectral-report.txt` con 0 errores y 0 warnings tras aplicar los `tags` |
 | Q&A (10) | `docs/seguridad/preguntas-panel.md` | — |
 | Trabajo en equipo (5) | `CHARTER.md`, `docs/backlog.md`, historial de commits y pull requests | — |
 | Presentación y tiempo (5) | Sin defensa en vivo; este archivo y el `README.md` cumplen esa función | — |
@@ -95,4 +95,4 @@ Surgen de comparar `api/openapi.yaml` con `main.py`. Conviene corregirlas o acep
 - PNG del C4 nivel 3 (`docs/c4/l3-component.png`) y enlace en `docs/c4/README.md`.
 - `tags` de las 5 operaciones del contrato y verificación con Spectral: `docs/api/spectral-report.txt` con **0 errores y 0 warnings**.
 - Alternativas consideradas en el ADR 0001.
-- Errores de `ruff` corregidos en `demo/ui/ui_server.py`, `docs/ia/evaluate.py` y `demo_s18.py`.
+- Errores de `ruff` corregidos en `demo/ui/ui_server.py`, `docs/ia/evaluate.py` y `demo_s18.py`; formato aplicado con `ruff format .`.

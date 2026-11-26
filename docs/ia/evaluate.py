@@ -74,8 +74,12 @@ def main() -> int:
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Motor: {report['target']}")
     print(f"Golden set: v{report['golden_set_version']}")
-    print(f"Casos: {report['total']}  |  OK: {report['passed']}  |  accuracy: {report['accuracy']:.0%}")
-    print(f"  categoria: {report['category_cases']}  justificacion: {report['justification_cases']}")
+    print(
+        f"Casos: {report['total']}  |  OK: {report['passed']}  |  accuracy: {report['accuracy']:.0%}"
+    )
+    print(
+        f"  categoria: {report['category_cases']}  justificacion: {report['justification_cases']}"
+    )
     print(f"  aciertos por categoria: {report['correct_by_category']}")
     if report["failures"]:
         print("FALLOS:")

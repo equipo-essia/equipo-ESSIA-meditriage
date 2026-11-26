@@ -1,16 +1,16 @@
 """Lanzador portable de la demo de MediTriage (Windows / macOS / Linux).
 
- Qué hace:
-   1. Verifica Python 3.10+.
-   2. Crea .venv-demo/ si no existe (NO toca el .venv del proyecto).
-   3. Instala requirements.txt la primera vez. Si existe carpeta wheels/,
-      instala SIN internet desde ahí.
-   4. Lanza demo_server.py con los mismos argumentos.
+Qué hace:
+  1. Verifica Python 3.10+.
+  2. Crea .venv-demo/ si no existe (NO toca el .venv del proyecto).
+  3. Instala requirements.txt la primera vez. Si existe carpeta wheels/,
+     instala SIN internet desde ahí.
+  4. Lanza demo_server.py con los mismos argumentos.
 
- Uso:
-    python start_demo.py
-    python start_demo.py --port 8080
-    python start_demo.py --download-wheels   # preparar PC sin internet
+Uso:
+   python start_demo.py
+   python start_demo.py --port 8080
+   python start_demo.py --download-wheels   # preparar PC sin internet
 """
 
 from __future__ import annotations

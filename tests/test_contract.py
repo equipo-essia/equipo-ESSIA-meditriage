@@ -4,6 +4,7 @@ Valida (subconjunto de JSON Schema): type, required, enum, minimum/maximum,
 properties, items y $ref. No valida `format` (ver nota en ENTREGA.md).
 Requiere: pip install pyyaml
 """
+
 import pathlib
 import re
 import uuid

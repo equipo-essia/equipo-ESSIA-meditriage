@@ -1,11 +1,16 @@
 """Agrega `tags` a las 5 operaciones de api/openapi.yaml (corrige los 5 warnings
 operation-tags de Spectral). Idempotente. Uso: python tools/add_openapi_tags.py"""
+
 import pathlib
 
 F = pathlib.Path("api/openapi.yaml")
-MAP = {"registerPatient": "Pacientes", "createTriageEvaluation": "Triage",
-       "updateTriageEvaluation": "Triage", "getTriageBoard": "Triage",
-       "getAuditLogs": "Auditoria"}
+MAP = {
+    "registerPatient": "Pacientes",
+    "createTriageEvaluation": "Triage",
+    "updateTriageEvaluation": "Triage",
+    "getTriageBoard": "Triage",
+    "getAuditLogs": "Auditoria",
+}
 lines = F.read_text(encoding="utf-8").splitlines(keepends=True)
 out, n = [], 0
 for i, ln in enumerate(lines):
@@ -20,9 +25,11 @@ for i, ln in enumerate(lines):
             n += 1
 text = "".join(out)
 if "\ntags:\n" not in text:
-    top = ("tags:\n  - name: Pacientes\n    description: Registro y consentimiento\n"
-           "  - name: Triage\n    description: Sugerencia ESI, confirmación y tablero\n"
-           "  - name: Auditoria\n    description: Registro de decisiones\n\n")
+    top = (
+        "tags:\n  - name: Pacientes\n    description: Registro y consentimiento\n"
+        "  - name: Triage\n    description: Sugerencia ESI, confirmación y tablero\n"
+        "  - name: Auditoria\n    description: Registro de decisiones\n\n"
+    )
     text = text.replace("\npaths:\n", "\n" + top + "paths:\n", 1)
 F.write_text(text, encoding="utf-8")
 print(f"{n} operaciones actualizadas")

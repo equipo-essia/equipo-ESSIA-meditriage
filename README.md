@@ -182,7 +182,7 @@ Detalle en [`k8s/README.md`](k8s/README.md) y [ADR 0008](docs/adr/0008-resilienc
 ## 7. Calidad
 
 - **112 tests**, **99,16 % de cobertura** de `main.py` (`pytest --cov=main`), incluidos los tests de contrato contra `api/openapi.yaml` (`tests/test_contract.py`).
-- `ruff check .` sin errores.
+- `ruff check .` y `ruff format --check .` sin errores.
 - `docs/api/spectral-report.txt`: 0 errores y 0 warnings tras agregar `tags` a las 5 operaciones.
 - Contrato OpenAPI 3.1 con errores RFC 7807 y `trace_id`.
 - Idempotencia por `Idempotency-Key` en los tres endpoints de escritura.

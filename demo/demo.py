@@ -1,8 +1,9 @@
 """Demo end-to-end de MediTriage (Windows / Linux / macOS, solo libreria estandar).
 
-  python demo/demo.py                                   # API local en :8000
-  $env:BASE_URL="http://127.0.0.1:8080"; python demo/demo.py   # API en Kubernetes via port-forward
+python demo/demo.py                                   # API local en :8000
+$env:BASE_URL="http://127.0.0.1:8080"; python demo/demo.py   # API en Kubernetes via port-forward
 """
+
 import json
 import os
 import sys
@@ -33,13 +34,28 @@ def call(method, path, body=None, write=False):
 
 
 print("== Paso 0  health:", call("GET", "/health"))
-s, p = call("POST", "/patients", {
-    "rut": "12.345.678-5", "fullName": "Paciente Demo", "consentGiven": True,
-    "vitalSigns": {"heartRate": 85, "oxygenSaturationPercentage": 96}}, write=True)
+s, p = call(
+    "POST",
+    "/patients",
+    {
+        "rut": "12.345.678-5",
+        "fullName": "Paciente Demo",
+        "consentGiven": True,
+        "vitalSigns": {"heartRate": 85, "oxygenSaturationPercentage": 96},
+    },
+    write=True,
+)
 print("== Paso 1  paciente registrado:", s, p["id"])
-s, ev = call("POST", "/triage-evaluations", {
-    "patientId": p["id"], "symptoms": ["dolor torácico"],
-    "vitalSigns": {"heartRate": 120, "oxygenSaturationPercentage": 92}}, write=True)
+s, ev = call(
+    "POST",
+    "/triage-evaluations",
+    {
+        "patientId": p["id"],
+        "symptoms": ["dolor torácico"],
+        "vitalSigns": {"heartRate": 120, "oxygenSaturationPercentage": 92},
+    },
+    write=True,
+)
 print("== Paso 2  sugerencia:", s, "ESI", ev["esiCategory"], "|", ev["justification"])
 s, c = call("PATCH", f"/triage-evaluations/{ev['id']}", {"confirmedByNurse": True}, write=True)
 print("== Paso 3  confirmada:", s, c["status"], c["confirmedByNurse"])
