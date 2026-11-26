@@ -25,44 +25,23 @@ operación y costos que se defiende en la S18.
 
 Requisitos: Python 3.11+ y `pip install -r requirements.txt`.
 
-```bash
-# Terminal 1: levantar la API
-AUTH_ENABLED=false uvicorn main:app --reload --port 8000
+```powershell
+# Terminal 1: levantar la API (Windows PowerShell)
+$env:AUTH_ENABLED = "false"
+uvicorn main:app --port 8000
 
-# Terminal 2: flujo completo (idempotencia, sugerencia, confirmación, tablero, auditoría)
-python - <<'PY'
-import json, urllib.request, uuid
-
-BASE = "http://127.0.0.1:8000"
-def call(method, path, body=None, idem=None):
-    data = json.dumps(body).encode() if body is not None else None
-    headers = {"Content-Type": "application/json"}
-    if idem: headers["Idempotency-Key"] = str(idem)
-    req = urllib.request.Request(BASE + path, data=data, headers=headers, method=method)
-    with urllib.request.urlopen(req) as r:
-        return r.status, json.loads(r.read())
-
-print("health:", call("GET", "/health"))
-s, patient = call("POST", "/patients", {
-    "rut": "12.345.678-5",
-    "fullName": "Paciente Demo",
-    "consentGiven": True,
-    "vitalSigns": {"heartRate": 85, "oxygenSaturationPercentage": 96},
-}, uuid.uuid4())
-print("paciente:", s, patient["id"])
-s, ev = call("POST", "/triage-evaluations", {
-    "patientId": patient["id"],
-    "symptoms": ["dolor torácico"],
-    "vitalSigns": {"heartRate": 120, "oxygenSaturationPercentage": 92},
-}, uuid.uuid4())
-print("sugerencia:", s, ev["esiCategory"], "|", ev["justification"])
-s, confirmed = call("PATCH", f"/triage-evaluations/{ev['id']}",
-                    {"confirmedByNurse": True}, uuid.uuid4())
-print("confirmada:", s, confirmed["status"], confirmed["confirmedByNurse"])
-print("tablero:", call("GET", "/triage-board")[1])
-print("auditoría:", len(call("GET", "/audit-logs")[1]), "eventos")
-PY
+# Terminal 2: flujo completo (registro, sugerencia ESI, confirmación, tablero, auditoría)
+python demo/demo.py
 ```
+
+En Linux o macOS: `AUTH_ENABLED=false uvicorn main:app --port 8000` y luego
+`python demo/demo.py`.
+
+Para correr la misma demo contra la API desplegada en Kubernetes, abre un túnel
+(`kubectl port-forward -n meditriage deploy/meditriage-api 8080:8000`) y ejecuta
+`$env:BASE_URL = "http://127.0.0.1:8080"; python demo/demo.py`. La interfaz
+visual de demo está en [`demo/ui/`](demo/ui/); no es la SPA diseñada en el C4,
+que sigue como diseño.
 
 Salida esperada: `health ok`, paciente `201`, sugerencia `202` con ESI 2 y
 justificación con la razón y la confirmación enfermera, `200` con

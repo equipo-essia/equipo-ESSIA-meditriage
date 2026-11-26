@@ -4,7 +4,7 @@
 |---|---|---|---|
 | L1 — Contexto | [`l1-context.puml`](l1-context.puml) · [`l1-context.png`](l1-context.png) | Usuarios, sistema y sistemas externos | **Diseño objetivo**: incluye SPA, RDS, SNS/SQS, worker de IA |
 | L2 — Contenedores | [`l2-container.puml`](l2-container.puml) · [`l2-container.png`](l2-container.png) | API, read models, broker, base de datos | **Diseño objetivo**: RDS/SQS/Lambda/OpenSearch no están implementados en `main` |
-| L3 — Componentes | [`l3-component.puml`](l3-component.puml) | Componentes reales del pod: middleware, auth, `rules-v0`, `STORE`, modelos | **Estado real en `main`** |
+| L3 — Componentes | [`l3-component.puml`](l3-component.puml) · [`l3-component.png`](l3-component.png) | Componentes reales del pod: middleware, auth, `rules-v0`, `STORE`, modelos | **Estado real en `main`** |
 
 > Para la defensa: mostrar los tres niveles y decir explícitamente cuáles son diseño y cuál es código que corre. Lo implementado hoy es una API FastAPI en memoria con reglas deterministas; el resto está en los ADR 0002 y 0004 como roadmap. Generar PNG con `plantuml -tpng docs/c4/l3-component.puml` si se quiere la imagen versionada.
 

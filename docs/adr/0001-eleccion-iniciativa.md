@@ -32,6 +32,13 @@ Se decide adoptar la iniciativa **MediTriage** como la solución arquitectónica
 
 ## Consecuencias
 
+### Alternativas consideradas
+
+| Alternativa | Por qué se descartó |
+|---|---|
+| Mantener el triaje manual sin apoyo de software | No ataca el problema: el objetivo es bajar la priorización de unos 25 min a menos de 3 min, y el proceso manual depende de la variabilidad de cada profesional. |
+| Modelo de IA cerrado ("black-box") | No explica por qué asigna una categoría; la enfermera no podría validarla ni corregirla en segundos, y se complica la trazabilidad que exige la Ley 21.719. |
+
 ### Positivas
 * **Estandarización y Precisión:** Reducción en la variabilidad del triaje al apegarse estrictamente al protocolo ESI (1-5).
 * **Eficiencia Operativa:** Al garantizar tiempos de respuesta por debajo de los 3 segundos, no se genera fricción ni demoras adicionales en la ventanilla o box de admisión de urgencia.
